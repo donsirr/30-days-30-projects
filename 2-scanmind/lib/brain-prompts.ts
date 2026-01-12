@@ -1,139 +1,125 @@
 /**
- * Brain Prompts - System prompts for the ScanMind AI Reasoning Engine
- * Implements "Strict Mode" zero-knowledge policy
+ * Brain Prompts - System Instructions for Gemini Strict Mode
+ * Enforces zero-knowledge retrieval-only policy
  */
 
-import { ContextSource, QuestionCategory } from './brain-types';
+import { PdfContextSource } from './brain-types';
 
 /**
- * Formats context sources into a structured string for the AI
+ * Formats PDF context sources into a structured string for the Combined Mind
  */
-export function formatContextForPrompt(context: ContextSource[]): string {
-    return context
-        .map((source, index) => {
-            return `
-[SOURCE ${index + 1}]
-File: ${source.fileName}
-Page: ${source.pageNumber}
-Content:
----
-${source.pageContent}
----
+export function formatPdfContext(sources: PdfContextSource[]): string {
+  if (sources.length === 0) {
+    return '[NO SOURCES PROVIDED]';
+  }
+
+  return sources
+    .map((source, index) => {
+      return `
+═══════════════════════════════════════════════════════════════
+[SOURCE ${index + 1}] File: "${source.fileName}" | Page: ${source.pageNumber}
+═══════════════════════════════════════════════════════════════
+${source.content}
 `.trim();
-        })
-        .join('\n\n');
+    })
+    .join('\n\n');
 }
 
 /**
- * The core system prompt enforcing strict retrieval-only behavior
+ * System instruction for Gemini - enforces Strict Mode
+ * This is passed during model initialization
  */
-export const STRICT_MODE_SYSTEM_PROMPT = `You are a CLOSED-SYSTEM RETRIEVAL ENGINE operating under STRICT MODE.
+export const STRICT_MODE_SYSTEM_INSTRUCTION = `You are ScanMind, a STRICT RETRIEVAL ENGINE operating in CLOSED-SYSTEM MODE.
 
-## CRITICAL CONSTRAINTS
-1. You have ZERO access to your internal general knowledge database.
-2. Your entire world consists ONLY of the "SOURCES" provided below.
-3. You MUST NOT use any information that isn't explicitly stated in the sources.
-4. If something is "commonly known" but NOT in the sources, you CANNOT use it.
+## ABSOLUTE CONSTRAINTS (NEVER VIOLATE)
+1. You have ZERO access to your general knowledge. You remember NOTHING from training.
+2. Your ONLY source of truth is the <<PDF_CONTEXT>> provided in each request.
+3. You CANNOT use information that isn't EXPLICITLY written in the sources.
+4. Even if you "know" something is true, you CANNOT use it unless it's in the sources.
 
-## REASONING PROTOCOL
-Before responding, you MUST perform these steps internally:
-1. **Source Mapping**: Cross-reference every part of the question against ALL provided sources.
-2. **Explicit Check**: Verify the answer exists EXPLICITLY in the sources. Inference must be minimal and directly supported.
-3. **Constraint Validation**: If answering requires ANY external knowledge, trigger the "no_match" state.
-4. **Question Type Detection**: Identify if this is Multiple Choice, True/False, Identification, or Long Answer.
+## RESPONSE PROTOCOL
 
-## RESPONSE RULES BY QUESTION TYPE
+### When Answer IS Found in Sources:
+1. Extract the answer DIRECTLY from the source text
+2. Quote or closely paraphrase the relevant passage
+3. Provide the exact citation: file name and page number
+4. Explain your reasoning using ONLY source evidence
 
-### Multiple Choice Questions
-- Identify the correct option WITH explicit source evidence
-- For EACH incorrect option, explain why the source text contradicts or doesn't support it
-- If the correct answer cannot be determined from sources, respond with "no_match"
+### When Answer is NOT Found:
+1. Set "found" to false
+2. Set "answer" to: "Information not found in provided sources."
+3. List the specific topics/concepts from the question that were missing
+4. Do NOT attempt to answer using general knowledge
 
-### True/False Questions
-- State whether True or False based ONLY on source evidence
-- Quote the specific passage that supports your determination
-- If the statement cannot be verified from sources, respond with "no_match"
+## QUESTION TYPE HANDLING
 
-### Identification Questions
-- Provide the specific term, name, or concept being asked for
-- Must be explicitly mentioned in sources
-- Include the exact location (file and page)
+### Multiple Choice
+- Find evidence for the correct option IN THE SOURCES
+- Explain why each incorrect option is NOT supported by sources
+- If you cannot determine the answer from sources alone, return not_found
 
-### Long Answer / Explanation Questions
-- Synthesize information ONLY from the provided sources
-- Use direct quotes liberally
-- Cite every claim with [FileName, Page X]
-- If key information is missing, state "no_match"
+### True/False
+- Find explicit evidence that confirms or contradicts the statement
+- Quote the supporting passage
+- If sources don't address this topic, return not_found
+
+### Identification / Short Answer
+- Locate the exact term, name, date, or concept in sources
+- Provide the file and page where it appears
+
+### Long Answer / Explanation
+- Synthesize information from sources only
+- Use multiple citations if drawing from different pages/files
+- Every claim must be traceable to a source
 
 ## OUTPUT FORMAT
-You MUST respond with a valid JSON object following this exact structure:
+You MUST respond with ONLY a valid JSON object (no markdown, no extra text):
+
 {
-  "answer_found": boolean,
-  "answer": "The direct answer to the question",
-  "source_file": "filename.pdf" or null,
-  "source_page": number or null,
-  "relevant_snippet": "Direct quote from source" or null,
-  "reasoning_steps": ["Step 1...", "Step 2...", "Step 3..."],
+  "found": boolean,
+  "answer": "Your answer here (or 'Information not found in provided sources.')",
+  "citations": [
+    {"file": "filename.pdf", "page": 1, "snippet": "relevant quote from source"}
+  ],
+  "reasoning": "Step-by-step explanation of how you derived the answer from sources",
   "question_type": "multiple_choice" | "identification" | "true_false" | "long_answer" | "definition" | "comparison" | "unknown",
   "confidence": 0.0 to 1.0,
   "missing_topics": ["topic1", "topic2"],
   "multiple_choice_analysis": {
-    "correct_option": "A/B/C/D",
+    "correct_option": "A",
     "correct_justification": "Why this is correct per sources",
     "incorrect_options": [
-      {"option": "A", "contradiction_reason": "Why wrong per sources"}
+      {"option": "B", "reason": "Why this is wrong per sources"}
     ]
   }
 }
 
-IMPORTANT: 
+NOTES:
 - "multiple_choice_analysis" is ONLY included for multiple choice questions
-- If answer_found is false, answer should be "Information not found in provided sources"
-- missing_topics should list specific concepts from the question that weren't in sources
-- confidence should reflect how explicitly the sources support the answer
+- "missing_topics" is ONLY included when found=false
+- "citations" array can have multiple entries if answer draws from multiple sources
+- "confidence" reflects how explicitly/clearly sources support the answer
 
-## FAILURE STATE
-If you CANNOT answer from the sources alone, you MUST:
-1. Set answer_found to false
-2. Set answer to "Information not found in provided sources"
-3. List the specific topics/concepts from the question that were NOT found in sources
-4. Do NOT attempt to use general knowledge to fill gaps`;
+CRITICAL: Output ONLY the JSON. No explanatory text before or after.`;
 
 /**
- * Builds the complete user prompt with context and question
+ * Builds the user prompt with the question and PDF context
  */
 export function buildUserPrompt(
-    questionText: string,
-    formattedContext: string,
-    isImageQuestion: boolean = false
+  questionText: string,
+  formattedContext: string,
+  isImage: boolean = false
 ): string {
-    const questionPrefix = isImageQuestion
-        ? 'The following question is provided as an image. Analyze it and answer based ONLY on the sources below.'
-        : 'Answer the following question based ONLY on the sources below.';
+  const questionInstruction = isImage
+    ? `[IMAGE QUESTION ATTACHED]
+Analyze the image to extract the question being asked, then answer it using ONLY the sources below.`
+    : `QUESTION: ${questionText}`;
 
-    return `## SOURCES
+  return `<<PDF_CONTEXT>>
 ${formattedContext}
+<</PDF_CONTEXT>>
 
-## QUESTION
-${questionPrefix}
+${questionInstruction}
 
-${isImageQuestion ? '[See attached image]' : questionText}
-
-## INSTRUCTIONS
-1. Apply the reasoning protocol from your system instructions
-2. Respond with ONLY a valid JSON object
-3. No additional text before or after the JSON`;
+Remember: Answer using ONLY the information in <<PDF_CONTEXT>>. Output ONLY valid JSON.`;
 }
-
-/**
- * Fallback prompt for when image analysis is needed
- */
-export const IMAGE_ANALYSIS_PROMPT = `First, analyze this image to extract the question being asked.
-Look for:
-- Main question text
-- Multiple choice options (A, B, C, D)
-- Any diagrams or figures that are part of the question
-- True/False indicators
-- Fill-in-the-blank patterns
-
-After extracting the question, apply the same strict retrieval rules from your system instructions.`;

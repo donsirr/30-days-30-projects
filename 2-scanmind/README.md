@@ -1,6 +1,6 @@
 # ScanMind 🧠
 
-A stateless AI reasoning engine that processes questions against PDF documents using Claude, enforcing a **strict retrieval-only policy** with zero external knowledge.
+A stateless AI reasoning engine that processes questions against PDF documents using **Google Gemini 1.5 Flash**. Leverages the massive 1-million-token context window for the "Combined Mind" approach, enforcing a **strict retrieval-only policy** with zero external knowledge.
 
 ## Features
 
@@ -16,7 +16,7 @@ A stateless AI reasoning engine that processes questions against PDF documents u
 ### Prerequisites
 
 1. Node.js 18+ 
-2. An [Anthropic API key](https://console.anthropic.com/)
+2. A [Google AI Studio API key](https://aistudio.google.com/app/apikey)
 
 ### Installation
 
@@ -29,7 +29,7 @@ npm install
 Create a `.env.local` file in the root directory:
 
 ```env
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
+GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ### Run Development Server
@@ -56,17 +56,17 @@ POST /api/brain
 {
   "question": {
     "type": "text" | "image",
-    "content": string,      // Plain text OR Base64-encoded image
-    "mimeType"?: string     // For images: "image/png", "image/jpeg", etc.
+    "content": string,      // Plain text OR Base64-encoded image (no data URL prefix)
+    "mimeType"?: string     // Required for images: "image/png", "image/jpeg", "image/webp"
   },
-  "context": [
+  "pdfContext": [           // The "Combined Mind" - all PDF sources
     {
       "fileName": "document.pdf",
-      "pageContent": "The extracted text from this page...",
+      "content": "The extracted text from this page...",
       "pageNumber": 1
     }
   ],
-  "sessionId": "session_123"  // For transient logging (no persistence)
+  "sessionId"?: "session_123"  // Optional, for transient logging
 }
 ```
 
@@ -74,17 +74,19 @@ POST /api/brain
 
 ```typescript
 {
-  "status": "success" | "error" | "no_match",
+  "status": "success" | "error" | "not_found",
   "answer": "The core response text",
-  "sourceMetadata": {
-    "file": "filename.pdf",
-    "page": 12,
-    "relevantSnippet": "Direct quote from source"
-  },
+  "citations": [                // Multiple sources can be cited
+    {
+      "fileName": "filename.pdf",
+      "pageNumber": 12,
+      "snippet": "Direct quote from source"
+    }
+  ],
   "reasoning": "Step-by-step logic used to derive the answer",
   "questionType": "multiple_choice" | "identification" | "true_false" | "long_answer" | "definition" | "comparison" | "unknown",
   "confidence": 0.95,           // 0-1 confidence score
-  "missingTopics": ["topic1"],  // Only present if status is "no_match"
+  "missingTopics": ["topic1"],  // Only present if status is "not_found"
   "processingTimeMs": 1234
 }
 ```
@@ -108,21 +110,26 @@ POST /api/brain
 
 ```typescript
 import { askTextQuestion, askImageQuestion, formatBrainResponseForDisplay } from '@/lib/brain-client';
-import { ContextSource } from '@/lib/brain-types';
+import { PdfContextSource } from '@/lib/brain-types';
 
-// Prepare PDF context
-const context: ContextSource[] = [
+// Prepare PDF context (the "Combined Mind")
+const pdfContext: PdfContextSource[] = [
   {
     fileName: "biology-notes.pdf",
-    pageContent: "Photosynthesis is the process by which plants convert sunlight...",
+    content: "Photosynthesis is the process by which plants convert sunlight...",
     pageNumber: 5
+  },
+  {
+    fileName: "biology-notes.pdf",
+    content: "The Calvin cycle occurs in the stroma of chloroplasts...",
+    pageNumber: 6
   }
 ];
 
 // Ask a text question
 const result = await askTextQuestion(
   "What is photosynthesis?",
-  context
+  pdfContext
 );
 
 if (result.success) {
@@ -133,7 +140,7 @@ if (result.success) {
 
 // Ask an image question (e.g., a photo of an exam question)
 const imageFile = new File([...], "question.png", { type: "image/png" });
-const imageResult = await askImageQuestion(imageFile, context);
+const imageResult = await askImageQuestion(imageFile, pdfContext);
 ```
 
 ### Direct API Call
@@ -147,14 +154,13 @@ const response = await fetch('/api/brain', {
       type: 'text',
       content: 'What are the main causes of the French Revolution?'
     },
-    context: [
+    pdfContext: [
       {
         fileName: 'history-textbook.pdf',
-        pageContent: 'The French Revolution was caused by...',
+        content: 'The French Revolution was caused by economic crisis, social inequality...',
         pageNumber: 42
       }
-    ],
-    sessionId: 'user_session_123'
+    ]
   })
 });
 
@@ -176,7 +182,7 @@ const data = await response.json();
 │         │                                            │              │
 │         ▼                                            ▼              │
 │  ┌─────────────┐    ┌─────────────────┐    ┌───────────────────┐   │
-│  │  Response   │◀───│  JSON Parsing   │◀───│  Claude API Call  │   │
+│  │  Response   │◀───│  JSON Parsing   │◀───│  Gemini API Call  │   │
 │  │   Mapper    │    │  & Validation   │    │  (Strict Mode)    │   │
 │  └─────────────┘    └─────────────────┘    └───────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
@@ -205,7 +211,7 @@ The Brain API implements a strict reasoning loop:
 ### Failure State
 
 If the answer cannot be found in the provided sources:
-- Status is set to `"no_match"`
+- Status is set to `"not_found"`
 - Answer explains information was not found
 - `missingTopics` array lists what was missing from sources
 
@@ -217,7 +223,7 @@ If the answer cannot be found in the provided sources:
 
 1. Push to GitHub
 2. Connect repository to [Vercel](https://vercel.com)
-3. Add `ANTHROPIC_API_KEY` to environment variables
+3. Add `GOOGLE_GEMINI_API_KEY` to environment variables
 4. Deploy
 
 ### Self-Hosted
@@ -232,7 +238,7 @@ npm start
 ## Tech Stack
 
 - **Framework**: Next.js 16
-- **AI**: Claude (Anthropic SDK)
+- **AI**: Google Gemini 1.5 Flash (1M token context)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
 

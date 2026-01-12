@@ -1,38 +1,38 @@
 /**
- * ScanMind Brain API - Stateless AI Reasoning Engine
+ * ScanMind Brain API - Stateless AI Reasoning Engine (Gemini 1.5 Flash)
  * 
- * This is the core intelligence endpoint for ScanMind.
- * It processes questions against PDF context using Claude 4.5 Opus
- * with strict retrieval-only constraints (no general knowledge).
+ * Leverages Gemini's 1M token context window for the "Combined Mind" approach.
+ * Processes questions (text or image) against concatenated PDF context.
  * 
  * POST /api/brain
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import {
     BrainRequest,
     BrainResponse,
     BrainErrorResponse,
-    ClaudeStructuredResponse,
+    GeminiParsedResponse,
     QuestionCategory,
+    SourceCitation,
 } from '@/lib/brain-types';
 import {
-    STRICT_MODE_SYSTEM_PROMPT,
-    formatContextForPrompt,
+    STRICT_MODE_SYSTEM_INSTRUCTION,
+    formatPdfContext,
     buildUserPrompt,
-    IMAGE_ANALYSIS_PROMPT,
 } from '@/lib/brain-prompts';
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
 // Model configuration
-const MODEL_ID = 'claude-sonnet-4-20250514'; // Using Claude Sonnet as a performant option
-const MAX_TOKENS = 4096;
-const TEMPERATURE = 0.1; // Low temperature for factual retrieval
+const MODEL_ID = 'gemini-1.5-flash';
+
+// Safety settings - allow educational content
+const SAFETY_SETTINGS = [
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+];
 
 /**
  * Validates the incoming request payload
@@ -58,44 +58,56 @@ function validateRequest(body: unknown): { valid: true; data: BrainRequest } | {
         return { valid: false, error: 'question.content must be a non-empty string' };
     }
 
-    // Validate context
-    if (!Array.isArray(req.context) || req.context.length === 0) {
-        return { valid: false, error: 'context must be a non-empty array' };
+    // For image type, validate mimeType
+    if (question.type === 'image' && !question.mimeType) {
+        return { valid: false, error: 'question.mimeType is required for image questions' };
     }
 
-    for (let i = 0; i < req.context.length; i++) {
-        const ctx = req.context[i] as Record<string, unknown>;
+    // Validate pdfContext
+    if (!Array.isArray(req.pdfContext) || req.pdfContext.length === 0) {
+        return { valid: false, error: 'pdfContext must be a non-empty array' };
+    }
+
+    for (let i = 0; i < req.pdfContext.length; i++) {
+        const ctx = req.pdfContext[i] as Record<string, unknown>;
         if (!ctx.fileName || typeof ctx.fileName !== 'string') {
-            return { valid: false, error: `context[${i}].fileName is required` };
+            return { valid: false, error: `pdfContext[${i}].fileName is required` };
         }
-        if (!ctx.pageContent || typeof ctx.pageContent !== 'string') {
-            return { valid: false, error: `context[${i}].pageContent is required` };
+        if (!ctx.content || typeof ctx.content !== 'string') {
+            return { valid: false, error: `pdfContext[${i}].content is required` };
         }
         if (typeof ctx.pageNumber !== 'number') {
-            return { valid: false, error: `context[${i}].pageNumber must be a number` };
+            return { valid: false, error: `pdfContext[${i}].pageNumber must be a number` };
         }
-    }
-
-    // Validate sessionId
-    if (!req.sessionId || typeof req.sessionId !== 'string') {
-        return { valid: false, error: 'sessionId is required' };
     }
 
     return { valid: true, data: req as unknown as BrainRequest };
 }
 
 /**
- * Parses Claude's JSON response with error handling
+ * Parses Gemini's JSON response with error handling
  */
-function parseClaudeResponse(text: string): ClaudeStructuredResponse | null {
+function parseGeminiResponse(text: string): GeminiParsedResponse | null {
     try {
-        // Try to extract JSON from the response (in case there's extra text)
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        // Clean the response - remove any markdown code blocks if present
+        let cleanText = text.trim();
+
+        // Remove ```json ... ``` wrapper if present
+        if (cleanText.startsWith('```')) {
+            const endIndex = cleanText.lastIndexOf('```');
+            if (endIndex > 3) {
+                cleanText = cleanText.substring(cleanText.indexOf('\n') + 1, endIndex).trim();
+            }
+        }
+
+        // Try to extract JSON from the response
+        const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
             console.error('[Brain] No JSON found in response:', text);
             return null;
         }
-        return JSON.parse(jsonMatch[0]) as ClaudeStructuredResponse;
+
+        return JSON.parse(jsonMatch[0]) as GeminiParsedResponse;
     } catch (error) {
         console.error('[Brain] Failed to parse JSON response:', error);
         console.error('[Brain] Raw response:', text);
@@ -104,97 +116,58 @@ function parseClaudeResponse(text: string): ClaudeStructuredResponse | null {
 }
 
 /**
- * Builds the message content for Claude, handling both text and image inputs
- */
-function buildMessageContent(
-    request: BrainRequest,
-    formattedContext: string
-): Anthropic.MessageParam['content'] {
-    const isImage = request.question.type === 'image';
-
-    if (isImage) {
-        // For image questions, we need to include the image and text prompt
-        const userPrompt = buildUserPrompt('', formattedContext, true);
-
-        // Determine media type from mimeType or default to jpeg
-        const mediaType = (request.question.mimeType || 'image/jpeg') as
-            'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
-
-        return [
-            {
-                type: 'image',
-                source: {
-                    type: 'base64',
-                    media_type: mediaType,
-                    data: request.question.content,
-                },
-            },
-            {
-                type: 'text',
-                text: `${IMAGE_ANALYSIS_PROMPT}\n\n${userPrompt}`,
-            },
-        ];
-    }
-
-    // For text questions, just return the text prompt
-    return buildUserPrompt(request.question.content, formattedContext, false);
-}
-
-/**
- * Maps Claude's response to our API response format
+ * Maps Gemini's response to our API response format
  */
 function mapToResponse(
-    parsed: ClaudeStructuredResponse,
+    parsed: GeminiParsedResponse,
     processingTimeMs: number
 ): BrainResponse {
-    if (!parsed.answer_found) {
+    // Map citations
+    const citations: SourceCitation[] = (parsed.citations || []).map(c => ({
+        fileName: c.file,
+        pageNumber: c.page,
+        snippet: c.snippet,
+    }));
+
+    // Map question type
+    const questionType = (parsed.question_type || 'unknown') as QuestionCategory;
+
+    if (!parsed.found) {
         return {
-            status: 'no_match',
-            answer: parsed.answer || 'Information not found in provided sources',
-            sourceMetadata: null,
-            reasoning: parsed.reasoning_steps?.join('\n') || 'No matching information found in sources.',
-            questionType: parsed.question_type || 'unknown',
+            status: 'not_found',
+            answer: parsed.answer || 'Information not found in provided sources.',
+            citations: [],
+            reasoning: parsed.reasoning,
+            questionType,
             confidence: parsed.confidence || 0,
             missingTopics: parsed.missing_topics || [],
             processingTimeMs,
         };
     }
 
-    return {
-        status: 'success',
-        answer: buildFormattedAnswer(parsed),
-        sourceMetadata: parsed.source_file ? {
-            file: parsed.source_file,
-            page: parsed.source_page || 0,
-            relevantSnippet: parsed.relevant_snippet || undefined,
-        } : null,
-        reasoning: parsed.reasoning_steps?.join('\n') || '',
-        questionType: parsed.question_type,
-        confidence: parsed.confidence,
-        processingTimeMs,
-    };
-}
-
-/**
- * Builds a formatted answer including MC analysis if applicable
- */
-function buildFormattedAnswer(parsed: ClaudeStructuredResponse): string {
-    let answer = parsed.answer;
-
-    // Add multiple choice analysis if present
-    if (parsed.question_type === 'multiple_choice' && parsed.multiple_choice_analysis) {
+    // Build formatted answer for multiple choice
+    let formattedAnswer = parsed.answer;
+    if (questionType === 'multiple_choice' && parsed.multiple_choice_analysis) {
         const mc = parsed.multiple_choice_analysis;
-        answer += `\n\n**Correct Answer: ${mc.correct_option}**\n${mc.correct_justification}`;
+        formattedAnswer += `\n\n**Correct Answer: ${mc.correct_option}**\n${mc.correct_justification}`;
 
         if (mc.incorrect_options && mc.incorrect_options.length > 0) {
-            answer += '\n\n**Why other options are incorrect:**';
+            formattedAnswer += '\n\n**Why other options are incorrect:**';
             mc.incorrect_options.forEach(opt => {
-                answer += `\n- **${opt.option}:** ${opt.contradiction_reason}`;
+                formattedAnswer += `\n• **${opt.option}:** ${opt.reason}`;
             });
         }
     }
 
-    return answer;
+    return {
+        status: 'success',
+        answer: formattedAnswer,
+        citations,
+        reasoning: parsed.reasoning,
+        questionType,
+        confidence: parsed.confidence,
+        processingTimeMs,
+    };
 }
 
 /**
@@ -202,6 +175,21 @@ function buildFormattedAnswer(parsed: ClaudeStructuredResponse): string {
  */
 export async function POST(request: NextRequest): Promise<NextResponse<BrainResponse | BrainErrorResponse>> {
     const startTime = Date.now();
+
+    // Check for API key
+    const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        console.error('[Brain] Missing GOOGLE_GEMINI_API_KEY environment variable');
+        return NextResponse.json(
+            {
+                status: 'error' as const,
+                error: 'API key not configured',
+                code: 'API_KEY_MISSING' as const,
+                details: 'Please set GOOGLE_GEMINI_API_KEY in environment variables',
+            },
+            { status: 500 }
+        );
+    }
 
     // Log incoming request (transient, no persistence)
     console.log(`[Brain] Request received at ${new Date().toISOString()}`);
@@ -223,51 +211,79 @@ export async function POST(request: NextRequest): Promise<NextResponse<BrainResp
         }
 
         const brainRequest = validation.data;
-        console.log(`[Brain] Session ${brainRequest.sessionId}: Processing ${brainRequest.question.type} question with ${brainRequest.context.length} context sources`);
+        const sessionId = brainRequest.sessionId || 'anonymous';
+        console.log(`[Brain] Session ${sessionId}: Processing ${brainRequest.question.type} question with ${brainRequest.pdfContext.length} context sources`);
 
-        // Format context for the prompt
-        const formattedContext = formatContextForPrompt(brainRequest.context);
-
-        // Build the message content
-        const messageContent = buildMessageContent(brainRequest, formattedContext);
-
-        // Call Claude API with extended thinking for deep reasoning
-        const response = await anthropic.messages.create({
+        // Initialize Gemini client with system instruction
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
             model: MODEL_ID,
-            max_tokens: MAX_TOKENS,
-            temperature: TEMPERATURE,
-            system: STRICT_MODE_SYSTEM_PROMPT,
-            messages: [
-                {
-                    role: 'user',
-                    content: messageContent,
-                },
-            ],
+            systemInstruction: STRICT_MODE_SYSTEM_INSTRUCTION,
+            safetySettings: SAFETY_SETTINGS,
+            generationConfig: {
+                temperature: 0.1, // Low temperature for factual retrieval
+                topP: 0.95,
+                topK: 40,
+                maxOutputTokens: 4096,
+            },
         });
 
-        // Extract text response
-        const textBlock = response.content.find(block => block.type === 'text');
-        if (!textBlock || textBlock.type !== 'text') {
-            console.error('[Brain] No text response from Claude');
+        // Format the PDF context for the Combined Mind
+        const formattedContext = formatPdfContext(brainRequest.pdfContext);
+
+        // Build the content parts based on question type
+        const isImage = brainRequest.question.type === 'image';
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let contentParts: any[];
+
+        if (isImage) {
+            // For image questions, use inlineData format
+            const userPrompt = buildUserPrompt('', formattedContext, true);
+            contentParts = [
+                {
+                    inlineData: {
+                        mimeType: brainRequest.question.mimeType || 'image/jpeg',
+                        data: brainRequest.question.content, // Base64 data without prefix
+                    },
+                },
+                { text: userPrompt },
+            ];
+        } else {
+            // For text questions
+            const userPrompt = buildUserPrompt(brainRequest.question.content, formattedContext, false);
+            contentParts = [{ text: userPrompt }];
+        }
+
+        // Generate response from Gemini
+        const result = await model.generateContent(contentParts);
+        const response = result.response;
+        const responseText = response.text();
+
+        // Check for blocked content
+        if (!responseText) {
+            const blockReason = response.promptFeedback?.blockReason;
+            console.error('[Brain] Empty response from Gemini, block reason:', blockReason);
             return NextResponse.json(
                 {
                     status: 'error' as const,
-                    error: 'No response generated',
+                    error: 'Content blocked by safety filters',
                     code: 'MODEL_ERROR' as const,
+                    details: blockReason || 'Unknown reason',
                 },
-                { status: 500 }
+                { status: 400 }
             );
         }
 
         // Parse the structured response
-        const parsed = parseClaudeResponse(textBlock.text);
+        const parsed = parseGeminiResponse(responseText);
         if (!parsed) {
             return NextResponse.json(
                 {
                     status: 'error' as const,
                     error: 'Failed to parse AI response',
                     code: 'PROCESSING_FAILED' as const,
-                    details: textBlock.text.substring(0, 500),
+                    details: responseText.substring(0, 500),
                 },
                 { status: 500 }
             );
@@ -277,7 +293,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<BrainResp
         const processingTimeMs = Date.now() - startTime;
         const brainResponse = mapToResponse(parsed, processingTimeMs);
 
-        console.log(`[Brain] Session ${brainRequest.sessionId}: Completed in ${processingTimeMs}ms with status ${brainResponse.status}`);
+        console.log(`[Brain] Session ${sessionId}: Completed in ${processingTimeMs}ms with status ${brainResponse.status}`);
 
         return NextResponse.json(brainResponse);
 
@@ -285,8 +301,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<BrainResp
         const processingTimeMs = Date.now() - startTime;
         console.error(`[Brain] Error after ${processingTimeMs}ms:`, error);
 
-        // Handle specific Anthropic errors
-        if (error instanceof Anthropic.RateLimitError) {
+        // Handle specific error types
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        // Check for rate limiting
+        if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit')) {
             return NextResponse.json(
                 {
                     status: 'error' as const,
@@ -297,13 +316,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<BrainResp
             );
         }
 
-        if (error instanceof Anthropic.APIError) {
+        // Check for API errors
+        if (errorMessage.includes('API') || errorMessage.includes('key')) {
             return NextResponse.json(
                 {
                     status: 'error' as const,
                     error: 'AI service error',
                     code: 'MODEL_ERROR' as const,
-                    details: error.message,
+                    details: errorMessage,
                 },
                 { status: 502 }
             );
@@ -315,7 +335,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<BrainResp
                 status: 'error' as const,
                 error: 'Internal server error',
                 code: 'PROCESSING_FAILED' as const,
-                details: error instanceof Error ? error.message : 'Unknown error',
+                details: errorMessage,
             },
             { status: 500 }
         );
@@ -327,7 +347,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<BrainResp
  */
 export async function GET(): Promise<NextResponse> {
     return NextResponse.json(
-        { error: 'Method not allowed. Use POST.' },
-        { status: 405 }
+        {
+            name: 'ScanMind Brain API',
+            version: '1.0.0',
+            model: MODEL_ID,
+            endpoints: {
+                POST: 'Submit a question with PDF context for AI-powered answering'
+            }
+        },
+        { status: 200 }
     );
 }
