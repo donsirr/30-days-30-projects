@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@layer theme {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+  }
+}
+
+@layer base {
+  body {
+    /* fallback to gray if slate issues, but slate should be there. 
+       Actually, in v4, colors might need to be explicitly imported or it uses OKLCH. 
+       I typically see tailwind v4 simply working with standard names. 
+    */
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
+}
