@@ -1,28 +1,17 @@
 /**
  * PDF Parser - Extracts text content from PDF files
- * Uses pdf.js for client-side PDF parsing
+ * Uses pdf.js for client-side PDF parsing (legacy build for better compatibility)
  * NOTE: This module must only be imported and used on the client side
  */
 
 import type { PdfPage } from './types';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
-// Dynamically import pdfjs to avoid SSR issues
-let pdfjsLib: typeof import('pdfjs-dist') | null = null;
-
-async function getPdfJs() {
-    if (pdfjsLib) return pdfjsLib;
-
-    if (typeof window === 'undefined') {
-        throw new Error('PDF parsing can only be done on the client side');
-    }
-
-    // Dynamic import to avoid SSR issues
-    pdfjsLib = await import('pdfjs-dist');
-
-    // Configure worker - using legacy build for better compatibility
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-
-    return pdfjsLib;
+// Set up the worker using a CDN that works
+// We use unpkg as it's more reliable for ESM modules
+if (typeof window !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/legacy/build/pdf.worker.min.mjs`;
 }
 
 /**
@@ -33,14 +22,20 @@ async function getPdfJs() {
 export async function extractPdfText(file: File): Promise<PdfPage[]> {
     const pages: PdfPage[] = [];
 
-    try {
-        const pdfjs = await getPdfJs();
+    if (typeof window === 'undefined') {
+        throw new Error('PDF parsing can only be done on the client side');
+    }
 
+    try {
         // Read file as ArrayBuffer
         const arrayBuffer = await file.arrayBuffer();
 
         // Load PDF document
-        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+        const loadingTask = pdfjsLib.getDocument({
+            data: arrayBuffer,
+        });
+
+        const pdf = await loadingTask.promise;
 
         // Extract text from each page
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
