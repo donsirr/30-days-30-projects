@@ -24,7 +24,7 @@ import {
 } from '@/lib/brain-prompts';
 
 // Model configuration
-const MODEL_ID = 'gemini-1.5-flash';
+const MODEL_ID = 'gemini-2.5-flash';
 
 // Safety settings - allow educational content
 const SAFETY_SETTINGS = [
