@@ -1,14 +1,15 @@
 import React, { useState, useRef, ChangeEvent } from 'react';
-import { UploadCloud, Image as ImageIcon, Send, Camera } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, Send, Camera, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface InputZoneProps {
     onFileDrop: (files: File[]) => void;
     onTextSubmit: (text: string) => void;
     isProcessing: boolean;
+    hasPdfs?: boolean;
 }
 
-export const InputZone: React.FC<InputZoneProps> = ({ onFileDrop, onTextSubmit, isProcessing }) => {
+export const InputZone: React.FC<InputZoneProps> = ({ onFileDrop, onTextSubmit, isProcessing, hasPdfs = false }) => {
     const [isDragOver, setIsDragOver] = useState(false);
     const [textInput, setTextInput] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -124,12 +125,12 @@ export const InputZone: React.FC<InputZoneProps> = ({ onFileDrop, onTextSubmit, 
                             type="text"
                             value={textInput}
                             onChange={(e) => setTextInput(e.target.value)}
-                            placeholder="Ask a question about your documents..."
-                            className="w-full pl-4 pr-24 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-sm text-slate-700 placeholder:text-slate-400"
+                            placeholder={hasPdfs ? "Ask a question about your documents..." : "Upload PDFs first, then ask questions..."}
+                            className={`w-full pl-4 pr-24 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-sm text-slate-700 placeholder:text-slate-400 ${!hasPdfs ? 'border-amber-200 bg-amber-50/50' : 'border-slate-200'}`}
                             disabled={isProcessing}
                         />
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-300 pointer-events-none hidden sm:block font-medium">
-                            Press Enter
+                            {hasPdfs ? 'Press Enter' : 'Add PDFs ↑'}
                         </div>
                     </div>
 

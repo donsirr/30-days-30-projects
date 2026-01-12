@@ -1,98 +1,49 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-// import { v4 as uuidv4 } from 'uuid'; // Removed in favor of native crypto 
-// Wait, I created the app, I didn't install uuid. I should verify if I can install it or use Math.random.
-// To be safe and dependency-free for this single file, I'll use crypto.randomUUID() or Math.random().
-
 import { Header } from '@/components/Header';
 import { InputZone } from '@/components/InputZone';
 import { FloatingInput } from '@/components/FloatingInput';
 import { PdfSidebar } from '@/components/PdfSidebar';
 import { Feed } from '@/components/Feed';
 import { PdfDocument, FeedItem } from '@/lib/types';
+import { extractPdfText } from '@/lib/pdf-parser';
+import {
+  askTextQuestion,
+  createImageQuestionFromBase64,
+  askBrain
+} from '@/lib/brain-client';
+import { PdfContextSource } from '@/lib/brain-types';
 
-// Mock Answer Generator
-const MOCK_ANSWERS = [
-  {
-    text: "The concept of 'statelessness' in this architecture refers to the absence of persistent data storage on the server. Every session begins with a clean slate, ensuring privacy and reducing infrastructure complexity.",
-    sourceFile: "Architecture_Specs_v1.pdf",
-    pageNumber: 4,
-    rawSnippet: "SECTION 4.2 STATELESSNESS:\nThe system shall not retain user data between sessions. All session data resides in volatile memory..."
-  },
-  {
-    text: "According to the study material, the 'Velocity' principle prioritizes keyboard shortcuts and drag-and-drop interactions to minimize user friction during high-intensity study sessions.",
-    sourceFile: "UX_Guidelines_2024.pdf",
-    pageNumber: 12,
-    rawSnippet: "PRINCIPLE 2: VELOCITY\nUsers should achieve goals with minimal clicks. Support Global Paste (Ctrl+V) and strict drag-and-drop zones."
-  },
-  {
-    text: "The interaction model uses a 'smart answer' card that collapses technical details by default, offering a 'Learning Mode' for users who need to verify the source material deep-dive.",
-    sourceFile: "Frontend_Components.pdf",
-    pageNumber: 8,
-    rawSnippet: "COMPONENT 3.1: SMART CARD\nDefault view: High-level summary.\nExpanded view (Toggle): Raw text extract + confidence score."
-  }
-];
-
-export default function Home() {
+export default function EnginePage() {
   const [pdfs, setPdfs] = useState<PdfDocument[]>([]);
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [processing, setProcessing] = useState(false);
   const [showFloatingInput, setShowFloatingInput] = useState(false);
   const inputZoneRef = useRef<HTMLDivElement>(null);
 
-  // -- Handlers --
+  // Build PDF context for the Brain API from all loaded PDFs
+  const buildPdfContext = useCallback((): PdfContextSource[] => {
+    const context: PdfContextSource[] = [];
 
-  const handleDemoLoad = () => {
-    // Load fake PDFs
-    const demoPdfs: PdfDocument[] = [
-      { id: 'demo1', name: 'Architecture_Specs_v1.pdf', uploadedAt: Date.now(), file: new File([], 'demo1') },
-      { id: 'demo2', name: 'UX_Guidelines_2024.pdf', uploadedAt: Date.now(), file: new File([], 'demo2') },
-    ];
-    setPdfs(demoPdfs);
-
-    // Load fake Feed Items
-    const demoFeed: FeedItem[] = [
-      {
-        id: 'demo_q1',
-        type: 'text',
-        timestamp: Date.now(),
-        content: "What is the core principle of statelessness?",
-        status: 'success',
-        answer: {
-          text: "The system uses volatile memory effectively to ensure no session data persists after refresh, enhancing security and privacy.",
-          sourceFile: "Architecture_Specs_v1.pdf",
-          pageNumber: 4,
-          rawSnippet: "SECTION 4.2 STATELESSNESS: The system shall not retain user data between sessions."
-        }
-      },
-      {
-        id: 'demo_q2',
-        type: 'text',
-        timestamp: Date.now() - 5000,
-        content: "Explain the velocity constraints.",
-        status: 'success',
-        answer: {
-          text: "Velocity is prioritized by minimizing clicks and enabling global paste shortcuts.",
-          sourceFile: "UX_Guidelines_2024.pdf",
-          pageNumber: 12
-        }
+    pdfs.forEach(pdf => {
+      if (pdf.pages && pdf.pages.length > 0) {
+        pdf.pages.forEach(page => {
+          if (page.content.trim()) {
+            context.push({
+              fileName: pdf.name,
+              pageNumber: page.pageNumber,
+              content: page.content,
+            });
+          }
+        });
       }
-    ];
-    setFeed(demoFeed);
-  };
+    });
 
-  const handleClearSession = () => {
-    if (confirm('Are you sure you want to clear the entire session?')) {
-      setPdfs([]);
-      setFeed([]);
-    }
-  };
+    return context;
+  }, [pdfs]);
 
-  const handleRemovePdf = (id: string) => {
-    setPdfs(prev => prev.filter(p => p.id !== id));
-  };
-
+  // Process a query using the Brain API
   const processQuery = useCallback(async (query: string, type: 'text' | 'image') => {
     const id = crypto.randomUUID();
     const newItem: FeedItem = {
@@ -107,95 +58,194 @@ export default function Home() {
     setFeed(prev => [newItem, ...prev]);
     setProcessing(true);
 
-    // Simulate Network Latency
-    setTimeout(() => {
-      setFeed(currentFeed => {
-        return currentFeed.map(item => {
+    try {
+      // Build the PDF context
+      const pdfContext = buildPdfContext();
+
+      // Check if we have any context
+      if (pdfContext.length === 0) {
+        setFeed(currentFeed =>
+          currentFeed.map(item =>
+            item.id === id
+              ? {
+                ...item,
+                status: 'error' as const,
+                answer: {
+                  text: 'Please upload at least one PDF document first. Drag and drop PDFs or use the file browser to add your study materials.'
+                }
+              }
+              : item
+          )
+        );
+        setProcessing(false);
+        return;
+      }
+
+      // Call the Brain API
+      let result;
+
+      if (type === 'image') {
+        // For image queries, we need to extract base64 from the blob URL
+        const response = await fetch(query);
+        const blob = await response.blob();
+        const base64 = await blobToBase64(blob);
+        const questionInput = createImageQuestionFromBase64(base64, blob.type);
+        result = await askBrain(questionInput, pdfContext);
+      } else {
+        result = await askTextQuestion(query, pdfContext);
+      }
+
+      // Update the feed item with the result
+      setFeed(currentFeed =>
+        currentFeed.map(item => {
           if (item.id === id) {
-            // Logic: If no PDFs, fail.
-            if (pdfs.length === 0) {
-              return { ...item, status: 'error' }; // or 'not_found'
-            }
-
-            // Randomly succeed or fail for demo
-            const shouldSucceed = Math.random() > 0.2;
-            if (shouldSucceed) {
-              const mock = MOCK_ANSWERS[Math.floor(Math.random() * MOCK_ANSWERS.length)];
-              // Inject one of the active PDF names as source if possible
-              const randomPdf = pdfs[Math.floor(Math.random() * pdfs.length)];
-
+            if (result.success) {
+              const data = result.data;
               return {
                 ...item,
-                status: 'success',
+                status: data.status === 'not_found' ? 'not_found' as const : 'success' as const,
+                processingTimeMs: data.processingTimeMs,
                 answer: {
-                  ...mock,
-                  sourceFile: randomPdf.name, // Override mock name with real active PDF name
-                  pdfId: randomPdf.id
+                  text: data.answer,
+                  citations: data.citations,
+                  reasoning: data.reasoning,
+                  questionType: data.questionType,
+                  confidence: data.confidence,
+                  missingTopics: data.missingTopics,
+                  // Legacy fields for backward compatibility with Feed component
+                  sourceFile: data.citations?.[0]?.fileName,
+                  pageNumber: data.citations?.[0]?.pageNumber,
+                  rawSnippet: data.citations?.[0]?.snippet,
                 }
               };
             } else {
-              return { ...item, status: 'not_found' };
+              return {
+                ...item,
+                status: 'error' as const,
+                answer: {
+                  text: result.error.error || 'An error occurred while processing your question.'
+                }
+              };
             }
           }
           return item;
-        });
-      });
+        })
+      );
+    } catch (error) {
+      console.error('Error processing query:', error);
+      setFeed(currentFeed =>
+        currentFeed.map(item =>
+          item.id === id
+            ? {
+              ...item,
+              status: 'error' as const,
+              answer: {
+                text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+              }
+            }
+            : item
+        )
+      );
+    } finally {
       setProcessing(false);
-    }, 2000);
-  }, [pdfs]);
+    }
+  }, [buildPdfContext]);
 
-  const handleFileDrop = (files: File[]) => {
+  // Helper to convert blob to base64
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data URL prefix
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // Handle file drops (PDFs and images)
+  const handleFileDrop = useCallback(async (files: File[]) => {
     const newPdfs: PdfDocument[] = [];
 
-    files.forEach(file => {
+    for (const file of files) {
       // Check if it's a PDF
       if (file.type === 'application/pdf') {
         const id = crypto.randomUUID();
-        newPdfs.push({
+        const newPdf: PdfDocument = {
           id,
           file,
           name: file.name,
-          uploadedAt: Date.now()
-        });
+          uploadedAt: Date.now(),
+          isProcessing: true,
+        };
+
+        // Add to state immediately (with processing state)
+        setPdfs(prev => [...prev, newPdf]);
+
+        // Parse PDF in background
+        try {
+          const pages = await extractPdfText(file);
+          setPdfs(prev =>
+            prev.map(p =>
+              p.id === id
+                ? { ...p, pages, isProcessing: false }
+                : p
+            )
+          );
+        } catch (error) {
+          console.error('Error parsing PDF:', error);
+          setPdfs(prev =>
+            prev.map(p =>
+              p.id === id
+                ? { ...p, isProcessing: false, error: 'Failed to parse PDF' }
+                : p
+            )
+          );
+        }
       } else if (file.type.startsWith('image/')) {
         // If it's an image dropped, treat as a Query
         const url = URL.createObjectURL(file);
         processQuery(url, 'image');
       }
-    });
-
-    if (newPdfs.length > 0) {
-      setPdfs(prev => [...prev, ...newPdfs]);
     }
-  };
+  }, [processQuery]);
 
+  // Handle paste events
   const handlePaste = useCallback((e: ClipboardEvent) => {
-    // 1. Handle Files (Images)
     if (e.clipboardData?.files && e.clipboardData.files.length > 0) {
       const files = Array.from(e.clipboardData.files);
-      // Filter for images
       const imageFile = files.find(f => f.type.startsWith('image/'));
       if (imageFile) {
         e.preventDefault();
         const url = URL.createObjectURL(imageFile);
         processQuery(url, 'image');
       }
-      return;
     }
-
-    // 2. Handle Text (only if not focused on an input)
-    // Note: We normally let default paste happen in input, 
-    // but if we are on body, maybe capture it?
-    // User Guide: "Global Listener ... for images". Text input handles its own paste.
-    // So we assume specific logic only for images here, unless directed otherwise.
   }, [processQuery]);
 
-  // Global Event Listener
+  // Clear session
+  const handleClearSession = () => {
+    if (confirm('Are you sure you want to clear the entire session?')) {
+      setPdfs([]);
+      setFeed([]);
+    }
+  };
+
+  // Remove a specific PDF
+  const handleRemovePdf = (id: string) => {
+    setPdfs(prev => prev.filter(p => p.id !== id));
+  };
+
+  // Global paste listener
   useEffect(() => {
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
   }, [handlePaste]);
 
+  // Floating input visibility based on scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -212,13 +262,11 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
-
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Header
         pdfs={pdfs}
         onClearSession={handleClearSession}
-        onDemoLoad={handleDemoLoad}
       />
 
       <main className="flex-1 w-full max-w-7xl mx-auto flex gap-6 px-4 relative">
@@ -230,6 +278,7 @@ export default function Home() {
               onFileDrop={handleFileDrop}
               onTextSubmit={(text) => processQuery(text, 'text')}
               isProcessing={processing}
+              hasPdfs={pdfs.some(p => p.pages && p.pages.length > 0)}
             />
           </div>
 
