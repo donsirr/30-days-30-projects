@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, Download, ExternalLink, CalendarDays, TrendingUp, Info } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, ExternalLink, CalendarDays, TrendingUp, Info, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ResultsDashboardProps {
@@ -10,6 +10,10 @@ interface ResultsDashboardProps {
     isVatLiable: boolean;
     roadmap: Array<{ title: string; desc: string; status: 'pending' | 'completed' | 'active' }>;
     checklist: string[];
+    recommendedRegime: '8%' | 'graduated';
+    savings: number;
+    birForm: '1701' | '1701A';
+    eoptAlert: string;
 }
 
 export function ResultsDashboard({
@@ -19,6 +23,10 @@ export function ResultsDashboard({
     isVatLiable,
     roadmap,
     checklist,
+    recommendedRegime,
+    savings,
+    birForm,
+    eoptAlert,
 }: ResultsDashboardProps) {
 
     const formatCurrency = (val: number) =>
@@ -51,7 +59,11 @@ export function ResultsDashboard({
                         </div>
                     ))}
                 </div>
-                <div className="mt-6 pt-6 border-t border-border">
+                <div className="mt-6 pt-6 border-t border-border space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                        <span className="text-foreground/50">BIR Form Required:</span>
+                        <span className="font-mono font-semibold text-accent">{birForm}</span>
+                    </div>
                     <button className="w-full flex items-center justify-center gap-2 bg-foreground text-background py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
                         <Download className="w-4 h-4" strokeWidth={1.5} />
                         Download Roadmap PDF
@@ -59,38 +71,37 @@ export function ResultsDashboard({
                 </div>
             </div>
 
-            {/* Small Card: EOPT Alert */}
-            <div className="md:col-span-2 bg-surface rounded-2xl border border-border p-5 flex items-start gap-4 relaltive overflow-hidden">
-                <div className="absolute right-0 top-0 p-4 opacity-5">
-                    <Info className="w-32 h-32" strokeWidth={1.5} />
-                </div>
-                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-600">
-                    <AlertCircle className="w-6 h-6" strokeWidth={1.5} />
-                </div>
-                <div>
-                    <h3 className="font-bold text-foreground">Good News: ₱500 Registration Fee Abolished</h3>
-                    <p className="text-sm text-foreground/60 mt-1">Starting 2026, the annual BIR registration fee is no longer required under the Ease of Paying Taxes (EOPT) Act.</p>
-                </div>
-            </div>
-
             {/* Medium Card: Tax Compare */}
             <div className="md:col-span-1 bg-surface rounded-2xl border border-border p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-bold text-lg">Tax Est.</h3>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-lg">Tax Estimate</h3>
                     <span className="text-xs font-mono text-foreground/40">Annual</span>
                 </div>
+
+                {/* Recommendation Badge */}
+                {!isVatLiable && savings > 0 && (
+                    <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-accent/10 rounded-lg border border-accent/20">
+                        <Sparkles className="w-4 h-4 text-accent" strokeWidth={1.5} />
+                        <span className="text-xs font-medium text-accent">
+                            Recommended: <strong>{recommendedRegime === '8%' ? '8% Flat Rate' : 'Graduated'}</strong> — Save {formatCurrency(savings)}
+                        </span>
+                    </div>
+                )}
 
                 <div className="space-y-6">
                     {/* 8% Option */}
                     <div className={`space-y-2 group ${isVatLiable ? 'opacity-40 grayscale' : ''}`}>
                         <div className="flex justify-between text-sm">
-                            <span className="font-medium text-foreground/80">8% Flat Rate</span>
+                            <span className={`font-medium ${recommendedRegime === '8%' && !isVatLiable ? 'text-emerald-600' : 'text-foreground/80'}`}>
+                                8% Flat Rate
+                            </span>
                             <span className="font-mono">{formatCurrency(tax8Percent)}</span>
                         </div>
                         <div className="h-3 bg-surface-hover rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${h8}%` }}
+                                transition={{ duration: 0.5, ease: "easeOut" }}
                                 className="h-full bg-emerald-500 rounded-full"
                             />
                         </div>
@@ -100,13 +111,16 @@ export function ResultsDashboard({
                     {/* Graduated Option */}
                     <div className="space-y-2 group">
                         <div className="flex justify-between text-sm">
-                            <span className="font-medium text-foreground/80">Graduated Rates</span>
+                            <span className={`font-medium ${recommendedRegime === 'graduated' ? 'text-accent' : 'text-foreground/80'}`}>
+                                Graduated Rates
+                            </span>
                             <span className="font-mono">{formatCurrency(taxGraduated)}</span>
                         </div>
                         <div className="h-3 bg-surface-hover rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${hG}%` }}
+                                transition={{ duration: 0.5, ease: "easeOut" }}
                                 className="h-full bg-accent rounded-full"
                             />
                         </div>
