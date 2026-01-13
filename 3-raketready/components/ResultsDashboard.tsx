@@ -2,7 +2,12 @@
 
 import { CheckCircle2, Download, ExternalLink, CalendarDays, ArrowRight, Sparkles, TrendingUp, FileText, Loader2, CheckCircle, X, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
-import { PDFDownloadLink } from "@react-pdf/renderer";
+import dynamic from "next/dynamic";
+
+const PDFDownloadButton = dynamic(
+    () => import("./PDFDownloadButton").then((mod) => mod.PDFDownloadButton),
+    { ssr: false, loading: () => <button disabled className="flex items-center gap-2 text-xs font-semibold text-foreground/60"><Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Initializing...</span></button> }
+);
 import { RoadmapPDF } from "./RoadmapPDF";
 import { TaxProfile } from "@/lib/RaketEngine";
 import { toast } from "sonner";
@@ -259,26 +264,11 @@ export function ResultsDashboard({
                     </div>
 
                     <div className="mt-6 pl-4 flex items-center gap-4">
-                        <PDFDownloadLink
-                            document={<RoadmapPDF taxProfile={taxProfile} income={income} />}
-                            fileName="RaketReady_Roadmap_2026.pdf"
-                        >
-                            {({ loading }) => (
-                                <button
-                                    disabled={loading}
-                                    className="flex items-center gap-2 text-xs font-semibold text-foreground/60 hover:text-foreground transition-colors group"
-                                    onClick={(e) => {
-                                        if (!loading) {
-                                            handleDownloadSuccess();
-                                        }
-                                    }}
-                                >
-                                    {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                                    <span>{loading ? 'Generating PDF...' : 'Download Full Guide'}</span>
-                                    {!loading && <ArrowRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />}
-                                </button>
-                            )}
-                        </PDFDownloadLink>
+                        <PDFDownloadButton
+                            taxProfile={taxProfile}
+                            income={income}
+                            onSuccess={handleDownloadSuccess}
+                        />
 
                         <div className="h-4 w-[1px] bg-border/50" />
 

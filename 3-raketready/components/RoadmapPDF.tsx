@@ -22,13 +22,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 24, // increased spacing
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB',
-        paddingBottom: 10,
+        paddingBottom: 12, // increased padding
     },
     logoText: {
-        fontSize: 16,
+        fontSize: 18, // larger logo
         fontWeight: 'bold',
         letterSpacing: -0.5,
     },
@@ -43,8 +43,8 @@ const styles = StyleSheet.create({
         fontSize: 8,
         color: '#047857',
         backgroundColor: '#ECFDF5',
-        paddingVertical: 2,
-        paddingHorizontal: 6,
+        paddingVertical: 3, // cleaner padding
+        paddingHorizontal: 8,
         borderRadius: 4,
         marginTop: 4,
     },
@@ -55,92 +55,97 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E5E7EB',
         borderRadius: 6,
-        padding: 12,
-        marginBottom: 20,
+        padding: 16, // more breathing room
+        marginBottom: 24,
     },
     summaryTitle: {
-        fontSize: 8,
+        fontSize: 9, // larger title
         color: '#6B7280',
         textTransform: 'uppercase',
-        letterSpacing: 1,
-        marginBottom: 6,
+        letterSpacing: 1.2,
+        marginBottom: 8,
     },
     highlightMetric: {
-        fontSize: 20,
+        fontSize: 28, // Distinctly large
         fontWeight: 'bold',
         color: '#000000',
-        marginBottom: 4,
+        marginBottom: 6,
+        letterSpacing: -1,
     },
     featureRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 10,
-        paddingTop: 10,
+        marginTop: 12,
+        paddingTop: 12,
         borderTopWidth: 1,
         borderTopColor: '#E5E7EB',
     },
     regimeBadge: {
         color: '#2E5BFF',
         fontWeight: 'bold',
+        fontSize: 10,
+        marginTop: 2,
     },
     eoptAlert: {
         color: '#059669',
         fontWeight: 'bold',
-        fontSize: 9,
+        fontSize: 10,
+        marginTop: 2,
     },
 
     // Section Headers
     sectionHeader: {
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 'bold',
-        marginBottom: 10,
-        marginTop: 10,
+        marginBottom: 12,
+        marginTop: 16, // more space before headers
         color: '#111827',
         borderLeftWidth: 3,
         borderLeftColor: '#2E5BFF',
-        paddingLeft: 8,
+        paddingLeft: 10,
     },
 
     // Checklist
     checklistContainer: {
-        marginTop: 5,
-        marginBottom: 20,
+        marginTop: 8,
+        marginBottom: 24,
     },
     checkItem: {
         flexDirection: 'row',
-        marginBottom: 6,
-        alignItems: 'flex-start', // Align to top for multi-line text
+        marginBottom: 8,
+        alignItems: 'flex-start',
     },
     checkbox: {
-        width: 8,
-        height: 8,
+        width: 10, // slightly larger
+        height: 10,
         borderWidth: 1,
         borderColor: '#9CA3AF',
-        marginRight: 8,
-        marginTop: 2, // Align with text
+        marginRight: 10,
+        marginTop: 1,
+        borderRadius: 2, // minor aesthetic rounded
     },
     checkText: {
         fontSize: 9,
         color: '#374151',
-        flex: 1, // Allow text to wrap
-        lineHeight: 1.3,
+        flex: 1,
+        lineHeight: 1.4,
     },
 
     // Roadmap
     stepContainer: {
-        marginBottom: 10,
+        marginBottom: 14, // better separation between steps
         flexDirection: 'row',
         alignItems: 'flex-start',
     },
     stepNumber: {
-        width: 14,
-        height: 14,
-        borderRadius: 7,
+        width: 16,
+        height: 16,
+        borderRadius: 8,
         backgroundColor: '#2E5BFF',
         color: '#FFFFFF',
-        fontSize: 7,
+        fontSize: 8,
         textAlign: 'center',
-        marginRight: 8,
+        marginRight: 12, // more gap from text
         marginTop: 1,
         paddingTop: 2,
     },
@@ -148,15 +153,15 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     stepTitle: {
-        fontSize: 9,
+        fontSize: 10,
         fontWeight: 'bold',
         color: '#111827',
+        marginBottom: 2,
     },
     stepDesc: {
-        fontSize: 8,
+        fontSize: 9,
         color: '#6B7280',
-        marginTop: 2,
-        lineHeight: 1.3,
+        lineHeight: 1.4,
     },
 
     // Footer
@@ -223,10 +228,14 @@ export function RoadmapPDF({ taxProfile, income }: RoadmapPDFProps) {
                 {/* Executive Summary */}
                 <View style={styles.summaryCard}>
                     <Text style={styles.summaryTitle}>Executive Tax Summary</Text>
-                    <Text style={styles.highlightMetric}>
-                        {formatCurrency(taxProfile.taxDueEstimate)}
-                        <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: 'normal' }}> / year (Est.)</Text>
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 6 }}>
+                        <Text style={styles.highlightMetric}>
+                            {formatCurrency(taxProfile.taxDueEstimate)}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 6, paddingBottom: 2 }}>
+                            / year (Est.)
+                        </Text>
+                    </View>
 
                     <View style={styles.featureRow}>
                         <View>

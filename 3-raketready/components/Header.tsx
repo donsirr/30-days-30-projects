@@ -9,11 +9,6 @@ export function Header() {
                 </div>
                 <h1 className="text-xl font-bold tracking-tight text-foreground">Raket-Ready</h1>
             </div>
-
-            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/5 border border-emerald-500/20 rounded-full">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" strokeWidth={1.5} />
-                <span className="text-[10px] font-bold text-emerald-700 tracking-wider uppercase">2026 Verified</span>
-            </div>
         </header>
     );
 }
