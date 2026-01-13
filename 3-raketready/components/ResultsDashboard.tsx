@@ -8,7 +8,7 @@ const PDFDownloadButton = dynamic(
     () => import("./PDFDownloadButton").then((mod) => mod.PDFDownloadButton),
     { ssr: false, loading: () => <button disabled className="flex items-center gap-2 text-xs font-semibold text-foreground/60"><Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Initializing...</span></button> }
 );
-import { RoadmapPDF } from "./RoadmapPDF";
+
 import { TaxProfile } from "@/lib/RaketEngine";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
