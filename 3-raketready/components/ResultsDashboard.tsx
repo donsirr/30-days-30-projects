@@ -1,8 +1,10 @@
 "use client";
 
-import { CheckCircle2, Download, ExternalLink, CalendarDays, ArrowRight, Sparkles, TrendingUp, FileText } from "lucide-react";
+import { CheckCircle2, Download, ExternalLink, CalendarDays, ArrowRight, Sparkles, TrendingUp, FileText, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Skeleton } from "./Skeleton";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { RoadmapPDF } from "./RoadmapPDF";
+import { TaxProfile } from "@/lib/RaketEngine";
 
 interface ResultsDashboardProps {
     income: number;
@@ -11,10 +13,12 @@ interface ResultsDashboardProps {
     recommendedRegime: '8%' | 'graduated';
     savings: number;
     isVatLiable: boolean;
-    birForm: string;
+    birForm: '1701' | '1701A';
     roadmap: Array<{ title: string; desc: string; status: string }>;
     checklist: string[];
     isLoading: boolean;
+    // We need the full object for PDF generation
+    taxProfile: TaxProfile;
 }
 
 export function ResultsDashboard({
@@ -27,7 +31,8 @@ export function ResultsDashboard({
     birForm,
     roadmap,
     checklist,
-    isLoading
+    isLoading,
+    taxProfile,
 }: ResultsDashboardProps) {
 
     const formatCurrency = (val: number) =>
@@ -126,8 +131,8 @@ export function ResultsDashboard({
                         {roadmap.map((step, idx) => (
                             <div key={idx} className="group flex items-start gap-4 p-4 rounded-lg hover:bg-surface-hover/60 transition-colors border border-transparent hover:border-border/50">
                                 <div className={`mt-0.5 flex items-center justify-center w-5 h-5 rounded-full border text-[10px] font-mono transition-colors ${step.status === 'active' ? 'border-accent bg-accent text-white' :
-                                        step.status === 'completed' ? 'border-emerald-500 bg-emerald-500 text-white' :
-                                            'border-border text-foreground/40'
+                                    step.status === 'completed' ? 'border-emerald-500 bg-emerald-500 text-white' :
+                                        'border-border text-foreground/40'
                                     }`}>
                                     {idx + 1}
                                 </div>
@@ -145,11 +150,25 @@ export function ResultsDashboard({
                     </div>
 
                     <div className="mt-6 pl-4">
-                        <button className="flex items-center gap-2 text-xs font-semibold text-foreground/60 hover:text-foreground transition-colors group">
-                            <Download className="w-3.5 h-3.5" />
-                            <span>Download Full Guide</span>
-                            <ArrowRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                        </button>
+                        <PDFDownloadLink
+                            document={<RoadmapPDF taxProfile={taxProfile} income={income} />}
+                            fileName="RaketReady_Roadmap_2026.pdf"
+                        >
+                            {/* 
+                                Note: PDFDownloadLink's children can be a function receiving { loading } 
+                                but here we simplify. The button itself handles the click.
+                            */}
+                            {({ loading }) => (
+                                <button
+                                    disabled={loading}
+                                    className="flex items-center gap-2 text-xs font-semibold text-foreground/60 hover:text-foreground transition-colors group"
+                                >
+                                    {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                                    <span>{loading ? 'Generating PDF...' : 'Download Full Guide'}</span>
+                                    {!loading && <ArrowRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />}
+                                </button>
+                            )}
+                        </PDFDownloadLink>
                     </div>
                 </div>
 

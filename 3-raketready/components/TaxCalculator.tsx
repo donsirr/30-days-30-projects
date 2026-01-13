@@ -78,6 +78,7 @@ export function TaxCalculator() {
                     recommendedRegime={taxProfile.recommendedRegime}
                     savings={taxProfile.savings}
                     birForm={taxProfile.birForm}
+                    taxProfile={taxProfile}
                 />
             </div>
         </div>
