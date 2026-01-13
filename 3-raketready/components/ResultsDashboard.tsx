@@ -1,10 +1,11 @@
 "use client";
 
-import { CheckCircle2, Download, ExternalLink, CalendarDays, ArrowRight, Sparkles, TrendingUp, FileText, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, ExternalLink, CalendarDays, ArrowRight, Sparkles, TrendingUp, FileText, Loader2, CheckCircle, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { RoadmapPDF } from "./RoadmapPDF";
 import { TaxProfile } from "@/lib/RaketEngine";
+import { toast } from "sonner";
 
 interface ResultsDashboardProps {
     income: number;
@@ -41,6 +42,42 @@ export function ResultsDashboard({
     const maxTax = Math.max(tax8Percent, taxGraduated) || 1;
     const h8 = (tax8Percent / maxTax) * 100;
     const hG = (taxGraduated / maxTax) * 100;
+
+    const handleDownloadSuccess = () => {
+        toast.custom((t) => (
+            <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="w-full max-w-sm bg-[#ECFDF5] border border-emerald-500/20 rounded-xl shadow-xl shadow-emerald-900/5 p-4 flex gap-3 items-start relative pointer-events-auto"
+            >
+                <div className="p-1 bg-emerald-500/10 rounded-full shrink-0">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" strokeWidth={2} />
+                </div>
+                <div className="flex-1 space-y-1">
+                    <h3 className="text-sm font-bold text-emerald-900">Roadmap Ready!</h3>
+                    <p className="text-xs text-emerald-800/80 leading-relaxed font-medium">
+                        Your Jan 2026 BIR compliance pack has been downloaded.
+                        <br /><span className="mt-1 block text-emerald-700">FYI: Under the EOPT Act, the ₱500 fee is abolished!</span>
+                    </p>
+                    <a
+                        href="https://orus.bir.gov.ph"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold uppercase tracking-wide text-emerald-700 hover:text-emerald-900 hover:underline transition-colors"
+                    >
+                        Next Step: Open ORUS <ArrowRight className="w-2.5 h-2.5" />
+                    </a>
+                </div>
+                <button
+                    onClick={() => toast.dismiss(t)}
+                    className="absolute top-2 right-2 p-1 text-emerald-600/40 hover:text-emerald-800 transition-colors rounded-full hover:bg-emerald-500/10"
+                >
+                    <X className="w-3.5 h-3.5" />
+                </button>
+            </motion.div>
+        ), { duration: 6000, position: 'bottom-right' }); // Increased duration slightly for reading
+    };
 
     return (
         <div className="h-full flex flex-col gap-8 relative">
@@ -162,6 +199,11 @@ export function ResultsDashboard({
                                 <button
                                     disabled={loading}
                                     className="flex items-center gap-2 text-xs font-semibold text-foreground/60 hover:text-foreground transition-colors group"
+                                    onClick={(e) => {
+                                        if (!loading) {
+                                            handleDownloadSuccess();
+                                        }
+                                    }}
                                 >
                                     {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                                     <span>{loading ? 'Generating PDF...' : 'Download Full Guide'}</span>
