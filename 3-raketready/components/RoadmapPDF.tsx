@@ -11,7 +11,7 @@ import type { TaxProfile } from '@/lib/RaketEngine';
 // --- Styles ---
 const styles = StyleSheet.create({
     page: {
-        padding: 36, // 0.5 inch margins approx
+        padding: 40,
         fontFamily: 'Helvetica',
         fontSize: 10,
         color: '#000000',
@@ -22,14 +22,14 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB', // Gray-200
-        paddingBottom: 12,
+        borderBottomColor: '#E5E7EB',
+        paddingBottom: 10,
     },
     logoText: {
         fontSize: 16,
-        fontWeight: 'bold', // Helvetica-Bold
+        fontWeight: 'bold',
         letterSpacing: -0.5,
     },
     metaContainer: {
@@ -37,36 +37,36 @@ const styles = StyleSheet.create({
     },
     metaText: {
         fontSize: 8,
-        color: '#6B7280', // Gray-500
+        color: '#6B7280',
     },
     badge: {
         fontSize: 8,
-        color: '#047857', // Emerald-700
-        backgroundColor: '#ECFDF5', // Emerald-50
-        paddingHorizontal: 8,
+        color: '#047857',
+        backgroundColor: '#ECFDF5',
         paddingVertical: 2,
-        borderRadius: 999,
+        paddingHorizontal: 6,
+        borderRadius: 4,
         marginTop: 4,
     },
 
     // Executive Summary Card
     summaryCard: {
-        backgroundColor: '#F8F9FA', // Surface
+        backgroundColor: '#F8F9FA',
         borderWidth: 1,
         borderColor: '#E5E7EB',
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 24,
+        borderRadius: 6,
+        padding: 12,
+        marginBottom: 20,
     },
     summaryTitle: {
-        fontSize: 9,
+        fontSize: 8,
         color: '#6B7280',
         textTransform: 'uppercase',
         letterSpacing: 1,
-        marginBottom: 8,
+        marginBottom: 6,
     },
     highlightMetric: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: 'bold',
         color: '#000000',
         marginBottom: 4,
@@ -74,28 +74,28 @@ const styles = StyleSheet.create({
     featureRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 12,
-        paddingTop: 12,
+        marginTop: 10,
+        paddingTop: 10,
         borderTopWidth: 1,
         borderTopColor: '#E5E7EB',
     },
     regimeBadge: {
-        color: '#2E5BFF', // Cobalt Blue
+        color: '#2E5BFF',
         fontWeight: 'bold',
     },
     eoptAlert: {
-        color: '#059669', // Emerald-600
+        color: '#059669',
         fontWeight: 'bold',
         fontSize: 9,
     },
 
     // Section Headers
     sectionHeader: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: 'bold',
-        marginBottom: 12,
-        marginTop: 12,
-        color: '#111827', // Gray-900
+        marginBottom: 10,
+        marginTop: 10,
+        color: '#111827',
         borderLeftWidth: 3,
         borderLeftColor: '#2E5BFF',
         paddingLeft: 8,
@@ -103,68 +103,74 @@ const styles = StyleSheet.create({
 
     // Checklist
     checklistContainer: {
-        marginBottom: 24,
+        marginTop: 5,
+        marginBottom: 20,
     },
     checkItem: {
         flexDirection: 'row',
-        marginBottom: 8,
-        alignItems: 'center',
+        marginBottom: 6,
+        alignItems: 'flex-start', // Align to top for multi-line text
     },
     checkbox: {
-        width: 10,
-        height: 10,
+        width: 8,
+        height: 8,
         borderWidth: 1,
         borderColor: '#9CA3AF',
         marginRight: 8,
+        marginTop: 2, // Align with text
     },
     checkText: {
         fontSize: 9,
         color: '#374151',
+        flex: 1, // Allow text to wrap
+        lineHeight: 1.3,
     },
 
     // Roadmap
     stepContainer: {
-        marginBottom: 12,
+        marginBottom: 10,
         flexDirection: 'row',
+        alignItems: 'flex-start',
     },
     stepNumber: {
-        width: 16,
-        height: 16,
-        borderRadius: 8,
+        width: 14,
+        height: 14,
+        borderRadius: 7,
         backgroundColor: '#2E5BFF',
         color: '#FFFFFF',
-        fontSize: 8,
+        fontSize: 7,
         textAlign: 'center',
         marginRight: 8,
-        paddingTop: 2, // Optical adjustment
+        marginTop: 1,
+        paddingTop: 2,
     },
     stepContent: {
         flex: 1,
     },
     stepTitle: {
-        fontSize: 10,
+        fontSize: 9,
         fontWeight: 'bold',
         color: '#111827',
     },
     stepDesc: {
-        fontSize: 9,
+        fontSize: 8,
         color: '#6B7280',
         marginTop: 2,
-        lineHeight: 1.4,
+        lineHeight: 1.3,
     },
 
     // Footer
     footer: {
         position: 'absolute',
         bottom: 30,
-        left: 36,
-        right: 36,
-        fontSize: 8,
+        left: 40,
+        right: 40,
+        fontSize: 7,
         color: '#9CA3AF',
         textAlign: 'center',
         borderTopWidth: 1,
         borderTopColor: '#F3F4F6',
-        paddingTop: 12,
+        paddingTop: 10,
     },
 });
 

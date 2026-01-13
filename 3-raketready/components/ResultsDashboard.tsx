@@ -1,11 +1,12 @@
 "use client";
 
-import { CheckCircle2, Download, ExternalLink, CalendarDays, ArrowRight, Sparkles, TrendingUp, FileText, Loader2, CheckCircle, X } from "lucide-react";
+import { CheckCircle2, Download, ExternalLink, CalendarDays, ArrowRight, Sparkles, TrendingUp, FileText, Loader2, CheckCircle, X, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { RoadmapPDF } from "./RoadmapPDF";
 import { TaxProfile } from "@/lib/RaketEngine";
 import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 interface ResultsDashboardProps {
     income: number;
@@ -18,7 +19,6 @@ interface ResultsDashboardProps {
     roadmap: Array<{ title: string; desc: string; status: string }>;
     checklist: string[];
     isLoading: boolean;
-    // We need the full object for PDF generation
     taxProfile: TaxProfile;
 }
 
@@ -36,6 +36,38 @@ export function ResultsDashboard({
     taxProfile,
 }: ResultsDashboardProps) {
 
+    // --- State & Logic for Interactive Checklist ---
+    const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+
+    // Load checked state from localStorage on mount
+    useEffect(() => {
+        const saved = localStorage.getItem('raketready_checklist');
+        if (saved) {
+            try {
+                setCheckedItems(JSON.parse(saved));
+            } catch (e) {
+                console.error("Failed to parse checklist items", e);
+            }
+        }
+    }, []);
+
+    // Save checked state to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('raketready_checklist', JSON.stringify(checkedItems));
+    }, [checkedItems]);
+
+
+    const toggleCheck = (item: string) => {
+        setCheckedItems(prev => ({
+            ...prev,
+            [item]: !prev[item]
+        }));
+    };
+
+    const progress = Math.round((Object.values(checkedItems).filter(Boolean).length / checklist.length) * 100) || 0;
+
+
+    // --- Helper Functions ---
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(val);
 
@@ -69,15 +101,40 @@ export function ResultsDashboard({
                         Next Step: Open ORUS <ArrowRight className="w-2.5 h-2.5" />
                     </a>
                 </div>
-                <button
+                <motion.button
                     onClick={() => toast.dismiss(t)}
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    transition={{ duration: 0.2 }}
                     className="absolute top-2 right-2 p-1 text-emerald-600/40 hover:text-emerald-800 transition-colors rounded-full hover:bg-emerald-500/10"
                 >
                     <X className="w-3.5 h-3.5" />
-                </button>
+                </motion.button>
             </motion.div>
-        ), { duration: 6000, position: 'bottom-right' }); // Increased duration slightly for reading
+        ), { duration: 6000, position: 'bottom-right' });
     };
+
+    // Smart Action Logic
+    // Simple heuristic: If "DTI" or "Trade Name" is in roadmap but not done? (We simulate this via checklist items map to steps roughly)
+    // Actually user requirement is specific: "If Step 0 (DTI) is unchecked" -> Prioritize DTI.
+    // Since we don't have a direct "Step 0 Checkbox" we can infer from the generic checklist items or just defaults.
+    // Update: User said "If Step 0 (DTI) is unchecked". The roadmap is just text, BUT the checklist has "DTI Certificate".
+    const hasDtiRequirement = checklist.some(i => i.includes("DTI"));
+    const isDtiChecked = hasDtiRequirement && checkedItems[checklist.find(i => i.includes("DTI")) || ''];
+
+    // Default smart action
+    let nextPriority = {
+        label: "Next Priority: Complete ORUS Registration",
+        link: "https://orus.bir.gov.ph",
+        buttonText: "Go to BIR ORUS"
+    };
+
+    if (hasDtiRequirement && !isDtiChecked) {
+        nextPriority = {
+            label: "Next Priority: Register with DTI",
+            link: "https://bnrs.dti.gov.ph",
+            buttonText: "Go to DTI BNRS"
+        };
+    }
 
     return (
         <div className="h-full flex flex-col gap-8 relative">
@@ -165,36 +222,47 @@ export function ResultsDashboard({
                     </div>
 
                     <div className="space-y-1">
-                        {roadmap.map((step, idx) => (
-                            <div key={idx} className="group flex items-start gap-4 p-4 rounded-lg hover:bg-surface-hover/60 transition-colors border border-transparent hover:border-border/50">
-                                <div className={`mt-0.5 flex items-center justify-center w-5 h-5 rounded-full border text-[10px] font-mono transition-colors ${step.status === 'active' ? 'border-accent bg-accent text-white' :
-                                    step.status === 'completed' ? 'border-emerald-500 bg-emerald-500 text-white' :
-                                        'border-border text-foreground/40'
-                                    }`}>
-                                    {idx + 1}
+                        {roadmap.map((step, idx) => {
+                            // Dynamic Link Logic for Roadmap Steps
+                            let stepLink = null;
+                            if (step.title.includes("DTI") || step.title.includes("Business Name")) stepLink = "https://bnrs.dti.gov.ph";
+                            if (step.title.includes("BIR") || step.title.includes("Certificate of Registration")) stepLink = "https://orus.bir.gov.ph";
+                            if (step.title.includes("LGU") || step.title.includes("Mayor's Permit") || step.title.includes("PTR")) stepLink = "https://www.google.com/maps/search/City+Hall";
+
+                            return (
+                                <div key={idx} className="group flex items-start gap-4 p-4 rounded-lg hover:bg-surface-hover/60 transition-colors border border-transparent hover:border-border/50">
+                                    <div className={`mt-0.5 flex items-center justify-center w-5 h-5 rounded-full border text-[10px] font-mono transition-colors ${step.status === 'active' ? 'border-accent bg-accent text-white' :
+                                        step.status === 'completed' ? 'border-emerald-500 bg-emerald-500 text-white' :
+                                            'border-border text-foreground/40'
+                                        }`}>
+                                        {idx + 1}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <h4 className={`text-sm font-medium ${step.status === 'active' ? 'text-foreground' : 'text-foreground/70'}`}>
+                                                {step.title}
+                                            </h4>
+                                            {stepLink && (
+                                                <a href={stepLink} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 transition-opacity text-accent hover:text-accent/80">
+                                                    <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-foreground/50 mt-1 leading-relaxed">
+                                            {step.desc}
+                                        </p>
+                                    </div>
+                                    {step.status === 'active' && <div className="w-1.5 h-1.5 rounded-full bg-accent mt-2" />}
                                 </div>
-                                <div className="flex-1">
-                                    <h4 className={`text-sm font-medium ${step.status === 'active' ? 'text-foreground' : 'text-foreground/70'}`}>
-                                        {step.title}
-                                    </h4>
-                                    <p className="text-xs text-foreground/50 mt-1 leading-relaxed">
-                                        {step.desc}
-                                    </p>
-                                </div>
-                                {step.status === 'active' && <div className="w-1.5 h-1.5 rounded-full bg-accent mt-2" />}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
-                    <div className="mt-6 pl-4">
+                    <div className="mt-6 pl-4 flex items-center gap-4">
                         <PDFDownloadLink
                             document={<RoadmapPDF taxProfile={taxProfile} income={income} />}
                             fileName="RaketReady_Roadmap_2026.pdf"
                         >
-                            {/* 
-                                Note: PDFDownloadLink's children can be a function receiving { loading } 
-                                but here we simplify. The button itself handles the click.
-                            */}
                             {({ loading }) => (
                                 <button
                                     disabled={loading}
@@ -211,35 +279,83 @@ export function ResultsDashboard({
                                 </button>
                             )}
                         </PDFDownloadLink>
+
+                        <div className="h-4 w-[1px] bg-border/50" />
+
+                        {/* 2026 EOPT Advisor */}
+                        <div className="flex items-center gap-2 text-[10px] text-emerald-600/80 bg-emerald-500/5 px-2 py-1 rounded border border-emerald-500/10">
+                            <Sparkles className="w-3 h-3" />
+                            <span className="font-medium">2026 EOPT Advisor Active</span>
+                        </div>
                     </div>
                 </div>
 
                 {/* Checklist - Card View */}
-                <div className="lg:col-span-5 border-l border-border/40 pl-8">
-                    <div className="flex items-center justify-between mb-6 px-1">
+                <div className="lg:col-span-5 border-l border-border/40 pl-8 flex flex-col">
+                    <div className="flex items-center justify-between mb-4 px-1">
                         <div className="flex items-center gap-2 text-foreground/50">
                             <FileText className="w-4 h-4" />
-                            <span className="text-xs font-bold uppercase tracking-widest">Documents</span>
+                            <span className="text-xs font-bold uppercase tracking-widest">Required Documents</span>
                         </div>
+                        <span className="text-[10px] font-mono text-foreground/40">{Math.round(progress)}% Ready</span>
                     </div>
 
-                    <ul className="space-y-3">
-                        {checklist.map((item, i) => (
-                            <li key={i} className="flex items-start gap-3 text-sm group">
-                                <span className={`mt-1 w-3.5 h-3.5 rounded-sm border mr-1 flex items-center justify-center transition-colors ${i < 3 ? 'border-foreground/30 text-foreground/30' : 'border-accent text-accent'
-                                    }`}>
-                                    {/* Fake Checkbox appearance */}
-                                    <span className="w-2 h-2 bg-current opacity-20" />
-                                </span>
-                                <span className="text-foreground/70 group-hover:text-foreground transition-colors">{item}</span>
-                            </li>
-                        ))}
+                    {/* Progress Bar */}
+                    <div className="h-1 w-full bg-surface-hover rounded-full overflow-hidden mb-6">
+                        <motion.div
+                            className="h-full bg-emerald-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ duration: 0.3 }}
+                        />
+                    </div>
+
+                    <ul className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                        {checklist.map((item, i) => {
+                            const isChecked = checkedItems[item] || false;
+                            return (
+                                <li
+                                    key={i}
+                                    className="flex items-start gap-3 text-sm group cursor-pointer select-none"
+                                    onClick={() => toggleCheck(item)}
+                                >
+                                    <div className={`mt-0.5 w-3.5 h-3.5 rounded-[4px] border flex items-center justify-center transition-all duration-200 ${isChecked
+                                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                                        : 'bg-transparent border-foreground/20 text-transparent group-hover:border-foreground/40'
+                                        }`}>
+                                        <CheckCircle className="w-3 h-3" strokeWidth={3} />
+                                    </div>
+                                    <span className={`transition-all duration-200 ${isChecked ? 'text-foreground/30 line-through decoration-foreground/30' : 'text-foreground/70 group-hover:text-foreground'
+                                        }`}>
+                                        {item}
+                                    </span>
+                                </li>
+                            );
+                        })}
                     </ul>
 
+                    {/* Smart Action Hub */}
                     <div className="mt-8 pt-6 border-t border-border/30">
-                        <a href="https://orus.bir.gov.ph" target="_blank" rel="noopener noreferrer" className="block w-full text-center py-2 rounded-lg bg-foreground/5 hover:bg-foreground/10 text-xs font-semibold text-foreground transition-colors border border-foreground/5">
-                            Open BIR ORUS Portal
+                        <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-foreground/40">{nextPriority.label}</div>
+                        <a
+                            href={nextPriority.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-full text-center py-2.5 rounded-lg bg-foreground text-background hover:opacity-90 transition-opacity text-xs font-bold uppercase tracking-wide shadow-lg"
+                        >
+                            {nextPriority.buttonText}
                         </a>
+                        <div className="mt-3 text-center">
+                            {nextPriority.link.includes("maps") ? (
+                                <span className="text-[10px] text-foreground/40 flex items-center justify-center gap-1">
+                                    <MapPin className="w-3 h-3" /> Finds nearest City Hall
+                                </span>
+                            ) : (
+                                <span className="text-[10px] text-foreground/40 flex items-center justify-center gap-1">
+                                    <ExternalLink className="w-3 h-3" /> Official Government Portal
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
