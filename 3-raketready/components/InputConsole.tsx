@@ -1,7 +1,6 @@
 "use client";
 
-import { Briefcase, User, Building2, Wallet } from "lucide-react";
-import { motion } from "framer-motion";
+import { Check, Coins, Briefcase, Building2, Wallet } from "lucide-react";
 
 interface InputConsoleProps {
     isLicensed: boolean;
@@ -28,105 +27,86 @@ export function InputConsole({
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(val);
 
-    return (
-        <section className="space-y-8 p-6 bg-surface rounded-2xl border border-border">
-            <div className="space-y-1">
-                <h2 className="text-sm font-semibold text-foreground/70 uppercase tracking-wider">Configuration</h2>
-                <p className="text-2xl font-bold">Profile Setup</p>
+    const ToggleItem = ({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) => (
+        <button
+            onClick={onClick}
+            className={`flex items-center justify-between px-3 py-2 rounded-md text-sm transition-all w-full text-left group ${active
+                    ? 'bg-surface-hover text-foreground font-medium'
+                    : 'text-foreground/60 hover:bg-surface-hover/50 hover:text-foreground/80'
+                }`}
+        >
+            <span>{label}</span>
+            {active && <Check className="w-4 h-4 text-accent" />}
+        </button>
+    );
+
+    const Section = ({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => (
+        <div className="mb-8">
+            <div className="flex items-center gap-2 mb-3 text-foreground/50 px-3">
+                <Icon className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-bold uppercase tracking-wider">{title}</span>
             </div>
+            <div className="space-y-0.5">
+                {children}
+            </div>
+        </div>
+    );
 
-            <div className="space-y-6">
-                {/* Step 1: Profession */}
-                <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border hover:border-accent/40 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${isLicensed ? 'bg-accent/10 text-accent' : 'bg-surface-hover text-foreground/60'}`}>
-                            <Briefcase className="w-5 h-5" strokeWidth={1.5} />
-                        </div>
-                        <div>
-                            <p className="font-semibold">Professional Type</p>
-                            <p className="text-xs text-foreground/50">Are you a licensed professional?</p>
-                        </div>
+    return (
+        <aside className="w-full h-full flex flex-col">
+            {/* Settings Groups */}
+            <div className="flex-1">
+                <Section title="Profession" icon={Briefcase}>
+                    <ToggleItem label="Non-Licensed Professional" active={!isLicensed} onClick={() => setIsLicensed(false)} />
+                    <ToggleItem label="Licensed (PRC)" active={isLicensed} onClick={() => setIsLicensed(true)} />
+                </Section>
+
+                <Section title="Registration" icon={Building2}>
+                    <ToggleItem label="Personal Name" active={!isTradeName} onClick={() => setIsTradeName(false)} />
+                    <ToggleItem label="Trade Name (DTI)" active={isTradeName} onClick={() => setIsTradeName(true)} />
+                </Section>
+
+                <Section title="Income Source" icon={Wallet}>
+                    <ToggleItem label="Purely Freelance" active={!isMixedIncome} onClick={() => setIsMixedIncome(false)} />
+                    <ToggleItem label="Mixed Income (Compensation)" active={isMixedIncome} onClick={() => setIsMixedIncome(true)} />
+                </Section>
+
+                <div className="mt-8 px-3">
+                    <div className="flex items-center gap-2 mb-4 text-foreground/50">
+                        <Coins className="w-3.5 h-3.5" />
+                        <span className="text-[11px] font-bold uppercase tracking-wider">Gross Annual Income</span>
                     </div>
-                    <button
-                        onClick={() => setIsLicensed(!isLicensed)}
-                        className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all ${isLicensed ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-surface-hover text-foreground/70 hover:bg-surface-hover/80'
-                            }`}
-                    >
-                        {isLicensed ? "Licensed" : "Non-Licensed"}
-                    </button>
-                </div>
 
-                {/* Step 2: Branding */}
-                <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border hover:border-accent/40 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${isTradeName ? 'bg-accent/10 text-accent' : 'bg-surface-hover text-foreground/60'}`}>
-                            <Building2 className="w-5 h-5" strokeWidth={1.5} />
+                    <div className="bg-surface border border-border/60 rounded-lg p-4 transition-colors hover:border-border/80">
+                        <div className="flex items-baseline justify-between mb-4">
+                            <span className="text-2xl font-semibold tracking-tight tabular-nums">{formatCurrency(income)}</span>
+                            <span className="text-xs text-foreground/40 font-mono">PHP</span>
                         </div>
-                        <div>
-                            <p className="font-semibold">Registration Name</p>
-                            <p className="text-xs text-foreground/50">Using a trade name or personal?</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => setIsTradeName(!isTradeName)}
-                        className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all ${isTradeName ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-surface-hover text-foreground/70 hover:bg-surface-hover/80'
-                            }`}
-                    >
-                        {isTradeName ? "Trade Name" : "Personal Name"}
-                    </button>
-                </div>
 
-                {/* Step 3: Employment */}
-                <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border hover:border-accent/40 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${isMixedIncome ? 'bg-accent/10 text-accent' : 'bg-surface-hover text-foreground/60'}`}>
-                            <Wallet className="w-5 h-5" strokeWidth={1.5} />
-                        </div>
-                        <div>
-                            <p className="font-semibold">Income Source</p>
-                            <p className="text-xs text-foreground/50">Do you differ mixed income?</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => setIsMixedIncome(!isMixedIncome)}
-                        className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all ${isMixedIncome ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-surface-hover text-foreground/70 hover:bg-surface-hover/80'
-                            }`}
-                    >
-                        {isMixedIncome ? "Mixed Income" : "Purely Freelance"}
-                    </button>
-                </div>
-
-                {/* Step 4: Income */}
-                <div className="p-4 bg-background rounded-xl border border-border space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="font-semibold">Projected Annual Income</p>
-                            <p className="text-xs text-foreground/50">Gross annual receipts</p>
-                        </div>
-                        <div className="text-right">
+                        <div className="relative h-5 w-full flex items-center group">
                             <input
-                                type="number"
+                                type="range"
+                                min="0"
+                                max="5000000"
+                                step="10000"
                                 value={income}
                                 onChange={(e) => setIncome(Number(e.target.value))}
-                                className="text-right font-mono font-bold text-accent bg-transparent border-none focus:ring-0 p-0 text-lg w-32"
+                                className="w-full absolute z-20 opacity-0 cursor-pointer h-full"
+                            />
+                            <div className="w-full h-1 bg-surface-hover rounded-full overflow-hidden relative">
+                                <div
+                                    className="h-full bg-foreground transition-all duration-75"
+                                    style={{ width: `${(income / 5000000) * 100}%` }}
+                                />
+                            </div>
+                            <div
+                                className="absolute w-3 h-3 bg-foreground rounded-full shadow-sm pointer-events-none transition-all duration-75 z-10 opacity-0 group-hover:opacity-100 scale-50 group-hover:scale-100"
+                                style={{ left: `calc(${(income / 5000000) * 100}% - 6px)` }}
                             />
                         </div>
                     </div>
-                    <input
-                        type="range"
-                        min="0"
-                        max="5000000"
-                        step="5000"
-                        value={income}
-                        onChange={(e) => setIncome(Number(e.target.value))}
-                        className="w-full h-2 bg-surface-hover rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="flex justify-between text-xs text-foreground/40 font-mono">
-                        <span>₱0</span>
-                        <span>₱5M+</span>
-                    </div>
                 </div>
             </div>
-        </section>
+        </aside>
     );
 }

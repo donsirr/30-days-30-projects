@@ -54,8 +54,9 @@ export function TaxCalculator() {
     }));
 
     return (
-        <div className="grid lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-4">
+        <div className="flex flex-col lg:flex-row h-[800px] border border-border rounded-xl overflow-hidden bg-background shadow-2xl shadow-black/5">
+            {/* Sidebar: Input Console */}
+            <div className="w-full lg:w-80 bg-surface/50 border-b lg:border-b-0 lg:border-r border-border p-6 flex-shrink-0">
                 <InputConsole
                     isLicensed={isLicensed} setIsLicensed={setIsLicensed}
                     isTradeName={isTradeName} setIsTradeName={setIsTradeName}
@@ -63,7 +64,9 @@ export function TaxCalculator() {
                     income={income} setIncome={setIncome}
                 />
             </div>
-            <div className="lg:col-span-8">
+
+            {/* Main Content: Results */}
+            <div className="flex-1 p-8 lg:p-12 overflow-y-auto bg-background/50">
                 <ResultsDashboard
                     isLoading={isCalculating}
                     income={debouncedIncome}
@@ -75,7 +78,6 @@ export function TaxCalculator() {
                     recommendedRegime={taxProfile.recommendedRegime}
                     savings={taxProfile.savings}
                     birForm={taxProfile.birForm}
-                    eoptAlert={taxProfile.eoptAlert}
                 />
             </div>
         </div>

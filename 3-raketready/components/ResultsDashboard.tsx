@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, Download, ExternalLink, CalendarDays, TrendingUp, Info, Sparkles } from "lucide-react";
+import { CheckCircle2, Download, ExternalLink, CalendarDays, ArrowRight, Sparkles, TrendingUp, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { Skeleton } from "./Skeleton";
 
@@ -8,13 +8,12 @@ interface ResultsDashboardProps {
     income: number;
     tax8Percent: number;
     taxGraduated: number;
-    isVatLiable: boolean;
-    roadmap: Array<{ title: string; desc: string; status: 'pending' | 'completed' | 'active' }>;
-    checklist: string[];
     recommendedRegime: '8%' | 'graduated';
     savings: number;
-    birForm: '1701' | '1701A';
-    eoptAlert: string;
+    isVatLiable: boolean;
+    birForm: string;
+    roadmap: Array<{ title: string; desc: string; status: string }>;
+    checklist: string[];
     isLoading: boolean;
 }
 
@@ -22,13 +21,12 @@ export function ResultsDashboard({
     income,
     tax8Percent,
     taxGraduated,
-    isVatLiable,
-    roadmap,
-    checklist,
     recommendedRegime,
     savings,
+    isVatLiable,
     birForm,
-    eoptAlert,
+    roadmap,
+    checklist,
     isLoading
 }: ResultsDashboardProps) {
 
@@ -40,135 +38,151 @@ export function ResultsDashboard({
     const hG = (taxGraduated / maxTax) * 100;
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-min">
+        <div className="h-full flex flex-col gap-8 relative">
+            {isLoading && <div className="absolute inset-0 z-50 bg-background/50 backdrop-blur-[2px] transition-all duration-300" />}
 
-            {/* Main Card: Roadmap (Vertical Timeline) - Spans 1 col, 2 rows on Desktop */}
-            <div className="md:col-span-1 md:row-span-2 bg-surface rounded-2xl border border-border p-6 flex flex-col relative overflow-hidden">
-                {isLoading && <div className="absolute inset-0 z-20 bg-surface/50 backdrop-blur-[1px] flex items-center justify-center"><Skeleton className="w-full h-full opacity-10" /></div>}
+            {/* 1. Hero / Executive Summary */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Primary Metric */}
+                <div className="p-6 rounded-xl border border-border/40 bg-surface/30">
+                    <div className="flex items-center gap-2 mb-6 text-foreground/50">
+                        <TrendingUp className="w-4 h-4" />
+                        <span className="text-xs font-bold uppercase tracking-widest">Estimated Tax Due</span>
+                    </div>
 
-                <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
-                    <CalendarDays className="w-5 h-5 text-accent" strokeWidth={1.5} />
-                    Registration Roadmap
-                </h3>
-                <div className="flex-1 relative space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border/50">
-                    {roadmap.map((step, idx) => (
-                        <div key={idx} className="relative pl-8">
-                            <div className={`absolute left-0 top-1 w-6 h-6 rounded-full border-2 bg-background z-10 flex items-center justify-center ${step.status === 'active' ? 'border-accent text-accent' : 'border-border text-foreground/20'
-                                }`}>
-                                <div className={`w-2 h-2 rounded-full ${step.status === 'active' ? 'bg-accent' : ''}`} />
+                    <div className="flex items-baseline gap-3 mb-2">
+                        <span className="text-4xl lg:text-5xl font-bold tracking-tighter text-foreground">
+                            {formatCurrency(recommendedRegime === '8%' ? tax8Percent : taxGraduated)}
+                        </span>
+                        <span className="text-sm text-foreground/40 font-medium">/ year</span>
+                    </div>
+
+                    {!isVatLiable && savings > 0 ? (
+                        <div className="inline-flex items-center gap-2 mt-2 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                            <Sparkles className="w-3 h-3" strokeWidth={1.5} />
+                            <span className="text-xs font-medium">Save {formatCurrency(savings)} with {recommendedRegime === '8%' ? '8%' : 'Graduated'}</span>
+                        </div>
+                    ) : (
+                        <div className="inline-flex items-center gap-2 mt-2 px-2.5 py-1 rounded-full bg-foreground/5 text-foreground/60 border border-foreground/10">
+                            <span className="text-xs font-medium">Standard Calculation Applied</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Comparison Chart */}
+                <div className="p-6 rounded-xl border border-border/40 bg-surface/30 flex flex-col justify-center">
+                    <div className="space-y-5">
+                        {/* 8% Bar */}
+                        <div className={`space-y-2 group ${isVatLiable ? 'opacity-40 grayscale' : ''}`}>
+                            <div className="flex justify-between text-xs font-medium px-1">
+                                <span className={recommendedRegime === '8%' ? 'text-emerald-600' : 'text-foreground/60'}>8% Flat Rate</span>
+                                <span className="text-foreground">{formatCurrency(tax8Percent)}</span>
                             </div>
-                            <div>
-                                <h4 className={`font-semibold text-sm ${step.status === 'active' ? 'text-foreground' : 'text-foreground/60'}`}>{step.title}</h4>
-                                <p className="text-xs text-foreground/50 mt-1">{step.desc}</p>
+                            <div className="h-2 w-full bg-surface-hover rounded-full overflow-hidden">
+                                <motion.div
+                                    className="h-full bg-emerald-500 rounded-full"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${h8}%` }}
+                                    transition={{ duration: 0.5 }}
+                                />
                             </div>
                         </div>
-                    ))}
-                </div>
-                <div className="mt-6 pt-6 border-t border-border space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                        <span className="text-foreground/50">BIR Form Required:</span>
-                        <span className="font-mono font-semibold text-accent">{birForm}</span>
+
+                        {/* Graduated Bar */}
+                        <div className="space-y-2 group">
+                            <div className="flex justify-between text-xs font-medium px-1">
+                                <span className={recommendedRegime === 'graduated' ? 'text-accent' : 'text-foreground/60'}>Graduated Rates</span>
+                                <span className="text-foreground">{formatCurrency(taxGraduated)}</span>
+                            </div>
+                            <div className="h-2 w-full bg-surface-hover rounded-full overflow-hidden">
+                                <motion.div
+                                    className="h-full bg-accent rounded-full"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${hG}%` }}
+                                    transition={{ duration: 0.5 }}
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <button className="w-full flex items-center justify-center gap-2 bg-foreground text-background py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
-                        <Download className="w-4 h-4" strokeWidth={1.5} />
-                        Download Roadmap PDF
-                    </button>
                 </div>
             </div>
 
-            {/* Small Card: EOPT Alert */}
-            <div className="md:col-span-2 bg-surface rounded-2xl border border-border p-5 flex items-start gap-4 relative overflow-hidden">
-                <div className="absolute right-0 top-0 p-4 opacity-5">
-                    <Info className="w-32 h-32" strokeWidth={1.5} />
-                </div>
-                <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-600">
-                    <AlertCircle className="w-6 h-6" strokeWidth={1.5} />
-                </div>
-                <div>
-                    <h3 className="font-bold text-foreground">Good News: ₱500 Registration Fee Abolished</h3>
-                    <p className="text-sm text-foreground/60 mt-1">{eoptAlert}</p>
-                </div>
-            </div>
+            {/* 2. Detailed Breakdown (Two Pane) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
 
-            {/* Medium Card: Tax Compare */}
-            <div className="md:col-span-1 bg-surface rounded-2xl border border-border p-6 relative overflow-hidden">
-                {isLoading && <div className="absolute inset-0 z-20 bg-surface/50 backdrop-blur-[1px]"><Skeleton className="w-full h-full opacity-10" /></div>}
-
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-lg">Tax Estimate</h3>
-                    <span className="text-xs font-mono text-foreground/40">Annual</span>
-                </div>
-
-                {/* Recommendation Badge */}
-                {!isVatLiable && savings > 0 && (
-                    <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-accent/10 rounded-lg border border-accent/20">
-                        <Sparkles className="w-4 h-4 text-accent" strokeWidth={1.5} />
-                        <span className="text-xs font-medium text-accent">
-                            Recommended: <strong>{recommendedRegime === '8%' ? '8% Flat Rate' : 'Graduated'}</strong> — Save {formatCurrency(savings)}
+                {/* Roadmap - List View */}
+                <div className="lg:col-span-7 p-0">
+                    <div className="flex items-center justify-between mb-6 px-1">
+                        <div className="flex items-center gap-2 text-foreground/50">
+                            <CalendarDays className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-widest">Compliance Roadmap</span>
+                        </div>
+                        <span className="text-[10px] font-mono bg-surface-hover px-2 py-1 rounded text-foreground/60">
+                            Form {birForm}
                         </span>
                     </div>
-                )}
 
-                <div className="space-y-6">
-                    {/* 8% Option */}
-                    <div className={`space-y-2 group ${isVatLiable ? 'opacity-40 grayscale' : ''}`}>
-                        <div className="flex justify-between text-sm">
-                            <span className={`font-medium ${recommendedRegime === '8%' && !isVatLiable ? 'text-emerald-600' : 'text-foreground/80'}`}>
-                                8% Flat Rate
-                            </span>
-                            <span className="font-mono">{formatCurrency(tax8Percent)}</span>
-                        </div>
-                        <div className="h-3 bg-surface-hover rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${h8}%` }}
-                                transition={{ duration: 0.5, ease: "easeOut" }}
-                                className="h-full bg-emerald-500 rounded-full"
-                            />
-                        </div>
-                        {isVatLiable && <p className="text-[10px] text-red-500">Not available (Income &gt; ₱3M)</p>}
+                    <div className="space-y-1">
+                        {roadmap.map((step, idx) => (
+                            <div key={idx} className="group flex items-start gap-4 p-4 rounded-lg hover:bg-surface-hover/60 transition-colors border border-transparent hover:border-border/50">
+                                <div className={`mt-0.5 flex items-center justify-center w-5 h-5 rounded-full border text-[10px] font-mono transition-colors ${step.status === 'active' ? 'border-accent bg-accent text-white' :
+                                        step.status === 'completed' ? 'border-emerald-500 bg-emerald-500 text-white' :
+                                            'border-border text-foreground/40'
+                                    }`}>
+                                    {idx + 1}
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className={`text-sm font-medium ${step.status === 'active' ? 'text-foreground' : 'text-foreground/70'}`}>
+                                        {step.title}
+                                    </h4>
+                                    <p className="text-xs text-foreground/50 mt-1 leading-relaxed">
+                                        {step.desc}
+                                    </p>
+                                </div>
+                                {step.status === 'active' && <div className="w-1.5 h-1.5 rounded-full bg-accent mt-2" />}
+                            </div>
+                        ))}
                     </div>
 
-                    {/* Graduated Option */}
-                    <div className="space-y-2 group">
-                        <div className="flex justify-between text-sm">
-                            <span className={`font-medium ${recommendedRegime === 'graduated' ? 'text-accent' : 'text-foreground/80'}`}>
-                                Graduated Rates
-                            </span>
-                            <span className="font-mono">{formatCurrency(taxGraduated)}</span>
-                        </div>
-                        <div className="h-3 bg-surface-hover rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${hG}%` }}
-                                transition={{ duration: 0.5, ease: "easeOut" }}
-                                className="h-full bg-accent rounded-full"
-                            />
-                        </div>
+                    <div className="mt-6 pl-4">
+                        <button className="flex items-center gap-2 text-xs font-semibold text-foreground/60 hover:text-foreground transition-colors group">
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download Full Guide</span>
+                            <ArrowRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            {/* Bottom Card: Checklist */}
-            <div className="md:col-span-1 bg-surface rounded-2xl border border-border p-6 flex flex-col relative overflow-hidden">
-                {isLoading && <div className="absolute inset-0 z-20 bg-surface/50 backdrop-blur-[1px]"><Skeleton className="w-full h-full opacity-10" /></div>}
+                {/* Checklist - Card View */}
+                <div className="lg:col-span-5 border-l border-border/40 pl-8">
+                    <div className="flex items-center justify-between mb-6 px-1">
+                        <div className="flex items-center gap-2 text-foreground/50">
+                            <FileText className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-widest">Documents</span>
+                        </div>
+                    </div>
 
-                <h3 className="font-bold text-lg mb-4">RDO Checklist</h3>
-                <ul className="space-y-3 flex-1 overflow-y-auto max-h-[200px] pr-2 custom-scrollbar">
-                    {checklist.map((item, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm">
-                            <CheckCircle2 className="w-4 h-4 text-accent shrink-0 mt-0.5" strokeWidth={1.5} />
-                            <span className="text-foreground/70">{item}</span>
-                        </li>
-                    ))}
-                </ul>
-                <div className="mt-4 pt-4 border-t border-border">
-                    <a href="https://orus.bir.gov.ph" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-accent text-sm font-semibold hover:underline">
-                        Go to BIR ORUS <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
-                    </a>
+                    <ul className="space-y-3">
+                        {checklist.map((item, i) => (
+                            <li key={i} className="flex items-start gap-3 text-sm group">
+                                <span className={`mt-1 w-3.5 h-3.5 rounded-sm border mr-1 flex items-center justify-center transition-colors ${i < 3 ? 'border-foreground/30 text-foreground/30' : 'border-accent text-accent'
+                                    }`}>
+                                    {/* Fake Checkbox appearance */}
+                                    <span className="w-2 h-2 bg-current opacity-20" />
+                                </span>
+                                <span className="text-foreground/70 group-hover:text-foreground transition-colors">{item}</span>
+                            </li>
+                        ))}
+                    </ul>
+
+                    <div className="mt-8 pt-6 border-t border-border/30">
+                        <a href="https://orus.bir.gov.ph" target="_blank" rel="noopener noreferrer" className="block w-full text-center py-2 rounded-lg bg-foreground/5 hover:bg-foreground/10 text-xs font-semibold text-foreground transition-colors border border-foreground/5">
+                            Open BIR ORUS Portal
+                        </a>
+                    </div>
                 </div>
-            </div>
 
+            </div>
         </div>
     );
 }
