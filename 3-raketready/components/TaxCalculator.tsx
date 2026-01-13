@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { InputConsole } from "./InputConsole";
 import { ResultsDashboard } from "./ResultsDashboard";
-import { RaketEngine, type TaxProfile, type RoadmapStep } from "@/lib/RaketEngine";
+import { RaketEngine, type TaxProfile } from "@/lib/RaketEngine";
 
 export function TaxCalculator() {
     const [isLicensed, setIsLicensed] = useState(false);
@@ -11,18 +11,42 @@ export function TaxCalculator() {
     const [isMixedIncome, setIsMixedIncome] = useState(false);
     const [income, setIncome] = useState(500000);
 
+    // Loading State
+    const [isCalculating, setIsCalculating] = useState(false);
+    // Debounced Params (to simulate network/calc delay if needed, or just smoothen UI)
+    const [debouncedIncome, setDebouncedIncome] = useState(income);
+
+    // Debounce the income slider updates
+    useEffect(() => {
+        setIsCalculating(true);
+        const timer = setTimeout(() => {
+            setDebouncedIncome(income);
+            setIsCalculating(false);
+        }, 400); // 400ms delay for "Shimmer" effect
+        return () => clearTimeout(timer);
+    }, [income]);
+
+    // Immediate update for toggles
+    useEffect(() => {
+        setIsCalculating(true);
+        const timer = setTimeout(() => setIsCalculating(false), 300);
+        return () => clearTimeout(timer);
+    }, [isLicensed, isTradeName, isMixedIncome]);
+
+
     // --- Use RaketEngine for all calculations ---
     const taxProfile: TaxProfile = useMemo(() => {
+        // Use debouncedIncome for calculation to prevent layout thrashing
         const engine = new RaketEngine({
-            grossIncome: income,
+            grossIncome: debouncedIncome,
             isLicensed,
             hasTradeName: isTradeName,
             isMixedIncome,
         });
         return engine.compute();
-    }, [income, isLicensed, isTradeName, isMixedIncome]);
+    }, [debouncedIncome, isLicensed, isTradeName, isMixedIncome]);
 
-    // Transform stepList to legacy roadmap format for dashboard
+    // Transform stepList to roadmap format
     const roadmap = taxProfile.stepList.map((step) => ({
         title: step.title,
         desc: step.description,
@@ -41,7 +65,8 @@ export function TaxCalculator() {
             </div>
             <div className="lg:col-span-8">
                 <ResultsDashboard
-                    income={income}
+                    isLoading={isCalculating}
+                    income={debouncedIncome}
                     tax8Percent={taxProfile.tax8Percent}
                     taxGraduated={taxProfile.taxGraduated}
                     isVatLiable={taxProfile.isVatLiable}

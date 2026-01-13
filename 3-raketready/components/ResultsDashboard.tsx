@@ -2,6 +2,7 @@
 
 import { AlertCircle, CheckCircle2, Download, ExternalLink, CalendarDays, TrendingUp, Info, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { Skeleton } from "./Skeleton";
 
 interface ResultsDashboardProps {
     income: number;
@@ -14,6 +15,7 @@ interface ResultsDashboardProps {
     savings: number;
     birForm: '1701' | '1701A';
     eoptAlert: string;
+    isLoading: boolean;
 }
 
 export function ResultsDashboard({
@@ -27,6 +29,7 @@ export function ResultsDashboard({
     savings,
     birForm,
     eoptAlert,
+    isLoading
 }: ResultsDashboardProps) {
 
     const formatCurrency = (val: number) =>
@@ -40,7 +43,9 @@ export function ResultsDashboard({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-min">
 
             {/* Main Card: Roadmap (Vertical Timeline) - Spans 1 col, 2 rows on Desktop */}
-            <div className="md:col-span-1 md:row-span-2 bg-surface rounded-2xl border border-border p-6 flex flex-col">
+            <div className="md:col-span-1 md:row-span-2 bg-surface rounded-2xl border border-border p-6 flex flex-col relative overflow-hidden">
+                {isLoading && <div className="absolute inset-0 z-20 bg-surface/50 backdrop-blur-[1px] flex items-center justify-center"><Skeleton className="w-full h-full opacity-10" /></div>}
+
                 <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
                     <CalendarDays className="w-5 h-5 text-accent" strokeWidth={1.5} />
                     Registration Roadmap
@@ -71,8 +76,24 @@ export function ResultsDashboard({
                 </div>
             </div>
 
+            {/* Small Card: EOPT Alert */}
+            <div className="md:col-span-2 bg-surface rounded-2xl border border-border p-5 flex items-start gap-4 relative overflow-hidden">
+                <div className="absolute right-0 top-0 p-4 opacity-5">
+                    <Info className="w-32 h-32" strokeWidth={1.5} />
+                </div>
+                <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-600">
+                    <AlertCircle className="w-6 h-6" strokeWidth={1.5} />
+                </div>
+                <div>
+                    <h3 className="font-bold text-foreground">Good News: ₱500 Registration Fee Abolished</h3>
+                    <p className="text-sm text-foreground/60 mt-1">{eoptAlert}</p>
+                </div>
+            </div>
+
             {/* Medium Card: Tax Compare */}
-            <div className="md:col-span-1 bg-surface rounded-2xl border border-border p-6">
+            <div className="md:col-span-1 bg-surface rounded-2xl border border-border p-6 relative overflow-hidden">
+                {isLoading && <div className="absolute inset-0 z-20 bg-surface/50 backdrop-blur-[1px]"><Skeleton className="w-full h-full opacity-10" /></div>}
+
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-lg">Tax Estimate</h3>
                     <span className="text-xs font-mono text-foreground/40">Annual</span>
@@ -129,7 +150,9 @@ export function ResultsDashboard({
             </div>
 
             {/* Bottom Card: Checklist */}
-            <div className="md:col-span-1 bg-surface rounded-2xl border border-border p-6 flex flex-col">
+            <div className="md:col-span-1 bg-surface rounded-2xl border border-border p-6 flex flex-col relative overflow-hidden">
+                {isLoading && <div className="absolute inset-0 z-20 bg-surface/50 backdrop-blur-[1px]"><Skeleton className="w-full h-full opacity-10" /></div>}
+
                 <h3 className="font-bold text-lg mb-4">RDO Checklist</h3>
                 <ul className="space-y-3 flex-1 overflow-y-auto max-h-[200px] pr-2 custom-scrollbar">
                     {checklist.map((item, i) => (
