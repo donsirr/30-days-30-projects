@@ -57,7 +57,7 @@ export function ResultsDashboard({
                 <div className="flex-1 space-y-1">
                     <h3 className="text-sm font-bold text-emerald-900">Roadmap Ready!</h3>
                     <p className="text-xs text-emerald-800/80 leading-relaxed font-medium">
-                        Your Jan 2026 BIR compliance pack has been downloaded.
+                        Your {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} BIR compliance pack has been downloaded.
                         <br /><span className="mt-1 block text-emerald-700">FYI: Under the EOPT Act, the ₱500 fee is abolished!</span>
                     </p>
                     <a

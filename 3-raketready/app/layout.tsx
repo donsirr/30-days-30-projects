@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Raket-Ready | 2026 Tax Compliance",
+  title: "Raket-Ready | Tax Compliance",
   description: "Philippine Freelancer Tax Utility & Registration Roadmap",
 };
 
