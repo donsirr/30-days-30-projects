@@ -9,6 +9,7 @@ export interface Document {
     status: DocStatus;
     progress: number; // 0-100
     fileName?: string;
+    fileData?: string;
     verified?: boolean;
 }
 
@@ -55,26 +56,33 @@ export function useDocuments() {
             d.id === id ? { ...d, status: 'uploading', progress: 0 } : d
         ));
 
-        // Simulate progress
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += Math.floor(Math.random() * 15) + 5; // Random increment
-            if (progress >= 100) {
-                progress = 100;
-                clearInterval(interval);
-                // Finalize upload
-                completeUpload(id, file.name);
-            } else {
-                setDocuments(prev => prev.map(d =>
-                    d.id === id ? { ...d, progress } : d
-                ));
-            }
-        }, 200);
+        // Read file as Data URL for preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const fileData = e.target?.result as string;
+
+            // Simulate progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 15) + 5; // Random increment
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    // Finalize upload
+                    completeUpload(id, file.name, fileData);
+                } else {
+                    setDocuments(prev => prev.map(d =>
+                        d.id === id ? { ...d, progress } : d
+                    ));
+                }
+            }, 200);
+        };
+        reader.readAsDataURL(file);
     };
 
-    const completeUpload = (id: string, fileName: string) => {
+    const completeUpload = (id: string, fileName: string, fileData: string) => {
         setDocuments(prev => prev.map(d =>
-            d.id === id ? { ...d, status: 'uploaded', progress: 100, fileName, verified: true } : d
+            d.id === id ? { ...d, status: 'uploaded', progress: 100, fileName, fileData, verified: true } : d
         ));
     };
 

@@ -157,7 +157,23 @@ function VaultItem({ doc, onUpload, onDelete }: {
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         className="absolute right-0 top-8 z-20 w-32 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden flex flex-col py-1"
                                     >
-                                        <button className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 w-full text-left">
+                                        <button
+                                            onClick={() => {
+                                                if (doc.fileData) {
+                                                    // Create a temporary link to download/view
+                                                    const win = window.open();
+                                                    if (win) {
+                                                        win.document.write(
+                                                            '<iframe src="' + doc.fileData + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>'
+                                                        );
+                                                    }
+                                                } else {
+                                                    alert('Preview not available for this file.');
+                                                }
+                                                setShowMenu(false);
+                                            }}
+                                            className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 w-full text-left"
+                                        >
                                             <Eye size={12} /> View
                                         </button>
                                         <button

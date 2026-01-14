@@ -7,8 +7,8 @@
         "start": "node src/index.js",
         "dev": "node --watch src/index.js",
         "build": "tsc",
-        "db:migrate": "ts-node src/database/migrate.ts",
-        "db:seed": "ts-node src/database/seed.ts",
+        "db:migrate": "node src/database/migrate.js",
+        "db:seed": "node src/database/seed.js",
         "typecheck": "tsc --noEmit",
         "test": "jest"
     },
