@@ -18,9 +18,9 @@ export default function UrgentDeadlinesCard() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="col-span-1 md:col-span-1 md:row-span-1 bg-white rounded-[2rem] p-6 border border-[#1A365D]/10 shadow-sm hover:shadow-md transition-all group"
+            className="col-span-1 md:col-span-1 md:row-span-1 bg-white rounded-[2rem] p-5 border border-[#1A365D]/10 shadow-sm hover:shadow-md transition-all group"
         >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-red-50 rounded-xl text-red-500">
                         <Clock size={20} />
@@ -32,9 +32,9 @@ export default function UrgentDeadlinesCard() {
                 </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
                 {deadlines.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group/item border border-transparent hover:border-gray-200">
+                    <div key={item.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group/item border border-transparent hover:border-gray-200">
                         <div className="flex flex-col gap-0.5 overflow-hidden">
                             <span className="font-semibold text-sm text-gray-800 truncate pr-2">{item.name}</span>
                             <span className={clsx(

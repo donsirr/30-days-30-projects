@@ -213,7 +213,7 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
     const regions = ["Metro Manila", "Cebu", "Davao", "Iloilo", "Baguio", "Others"];
 
     // Mock Reverse Geocoding Map
-    const mockGeocode = (lat: number, long: number) => {
+    const mockGeocode = () => {
         // Simple mock: if coordinates exist, assume "Quezon City" for this demo
         // In prod this would call Google Maps / OpenStreetMap API
         return "Quezon City";
@@ -230,7 +230,7 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
             (position) => {
                 // Success
                 setTimeout(() => { // Artificially delay for realism
-                    const city = mockGeocode(position.coords.latitude, position.coords.longitude);
+                    const city = mockGeocode();
                     setDetectedCity(city);
                     updateData('location', 'Metro Manila'); // Map city to region for now
                     setShowResidency(city === 'Quezon City' || city === 'Makati');
@@ -238,7 +238,7 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
                     // Persist to local storage
                     try {
                         localStorage.setItem('iskolar_location', JSON.stringify({ city, lat: position.coords.latitude, long: position.coords.longitude }));
-                    } catch (e) {
+                    } catch {
                         // ignore
                     }
                 }, 1500);
