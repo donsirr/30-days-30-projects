@@ -743,3 +743,455 @@ All endpoints return consistent error responses:
    - Cache frequently accessed scholarships
    - Cache match results with TTL
    - Invalidate on scholarship updates
+
+---
+
+## Vault Endpoints (Document Status)
+
+### Update Document Status
+
+#### `POST /vault/status`
+
+Updates the status of a specific document for a student.
+
+**Request Body:**
+```json
+{
+  "studentId": "550e8400-e29b-41d4-a716-446655440000",
+  "documentType": "PSA",
+  "status": "uploaded",
+  "metadata": {
+    "fileName": "psa_birth_certificate.pdf",
+    "fileUrl": "https://storage.example.com/docs/psa.pdf"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Document status updated to \"uploaded\"",
+  "document": {
+    "id": "doc-uuid",
+    "documentType": "PSA",
+    "displayName": "PSA Birth Certificate",
+    "status": "uploaded",
+    "fileName": "psa_birth_certificate.pdf",
+    "uploadedAt": "2026-01-14T09:18:00.000Z"
+  },
+  "vaultStatus": {
+    "studentId": "550e8400-e29b-41d4-a716-446655440000",
+    "totalRequired": 4,
+    "completion": {
+      "ready": 2,
+      "verified": 1,
+      "pending": 2,
+      "rejected": 0,
+      "percentage": 50
+    },
+    "isComplete": false,
+    "documents": [...],
+    "readinessMessage": {
+      "status": "halfway",
+      "icon": "📋",
+      "message": "You're halfway done. Keep going!",
+      "color": "orange"
+    }
+  }
+}
+```
+
+### Batch Update Documents
+
+#### `POST /vault/status/batch`
+
+Updates multiple document statuses at once.
+
+**Request Body:**
+```json
+{
+  "studentId": "550e8400-e29b-41d4-a716-446655440000",
+  "updates": [
+    { "documentType": "PSA", "status": "uploaded", "metadata": { "fileName": "psa.pdf" } },
+    { "documentType": "Form138", "status": "verified" }
+  ]
+}
+```
+
+### Get Vault Status
+
+#### `GET /vault/:studentId`
+
+Returns the complete vault status for a student.
+
+### Check Document Eligibility
+
+#### `POST /vault/check-eligibility`
+
+Checks if a student has the required documents for a scholarship.
+
+**Request Body:**
+```json
+{
+  "studentId": "550e8400-e29b-41d4-a716-446655440000",
+  "requiredDocuments": ["PSA", "Form138", "ITR"]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "isEligible": false,
+  "requiredDocuments": [
+    { "documentType": "PSA", "displayName": "PSA Birth Certificate", "isReady": true },
+    { "documentType": "Form138", "displayName": "Form 138 (Report Card)", "isReady": true },
+    { "documentType": "ITR", "displayName": "Income Tax Return (ITR)", "isReady": false }
+  ],
+  "missingDocuments": [
+    { "documentType": "ITR", "displayName": "Income Tax Return (ITR)" }
+  ],
+  "message": "Missing 1 document(s): Income Tax Return (ITR)"
+}
+```
+
+---
+
+## Location Endpoints (Geocoding & Residency)
+
+### Detect Location from Coordinates
+
+#### `POST /location/detect`
+
+Reverse geocodes coordinates to detect the nearest Philippine city and check for LGU scholarships.
+
+**Request Body:**
+```json
+{
+  "latitude": 14.5547,
+  "longitude": 121.0244
+}
+```
+
+**Response (with LGU scholarship detected):**
+```json
+{
+  "success": true,
+  "location": {
+    "success": true,
+    "city": {
+      "id": 2,
+      "name": "Makati",
+      "coordinates": { "latitude": 14.5547, "longitude": 121.0244 }
+    },
+    "distance": 0.42,
+    "confidence": "high",
+    "isWithinCityBounds": true
+  },
+  "hasLguScholarship": true,
+  "lguScholarship": {
+    "name": "Makati City",
+    "scholarshipName": "Makati City College Scholarship",
+    "minResidencyYears": 3,
+    "requiresProofOfResidency": true,
+    "cityId": 2
+  },
+  "requiredAction": {
+    "type": "VERIFY_RESIDENCY",
+    "title": "Residency Verification Required",
+    "message": "Makati City offers a scholarship program. Please verify your residency duration.",
+    "fields": [
+      {
+        "name": "residencyYears",
+        "label": "How many years have you lived in Makati City?",
+        "type": "number",
+        "required": true,
+        "min": 0,
+        "max": 50,
+        "hint": "Minimum 3 years required for Makati City College Scholarship"
+      }
+    ],
+    "scholarshipInfo": {
+      "name": "Makati City College Scholarship",
+      "minResidency": 3,
+      "requiresProofOfResidency": true
+    }
+  }
+}
+```
+
+### Validate Residency for LGU
+
+#### `POST /location/validate-residency`
+
+Validates if a student meets the residency requirement for an LGU scholarship.
+
+**Request Body:**
+```json
+{
+  "cityId": 2,
+  "residencyYears": 5
+}
+```
+
+**Response (eligible):**
+```json
+{
+  "success": true,
+  "isEligible": true,
+  "lguInfo": {
+    "city": "Makati City",
+    "scholarshipName": "Makati City College Scholarship",
+    "minResidencyRequired": 3,
+    "actualResidency": 5
+  },
+  "message": "You meet the 3-year residency requirement for Makati City College Scholarship!",
+  "yearsNeeded": 0,
+  "nextSteps": [
+    "Prepare proof of residency (Barangay Certificate)",
+    "Ensure your address is consistent across documents",
+    "Apply for Makati City College Scholarship"
+  ]
+}
+```
+
+**Response (not eligible):**
+```json
+{
+  "success": true,
+  "isEligible": false,
+  "lguInfo": {
+    "city": "Makati City",
+    "scholarshipName": "Makati City College Scholarship",
+    "minResidencyRequired": 3,
+    "actualResidency": 1
+  },
+  "message": "You need at least 3 years of residency. You currently have 1 year(s).",
+  "yearsNeeded": 2,
+  "nextSteps": [
+    "Continue residing in Makati City for 2 more year(s)",
+    "Consider other national scholarship programs in the meantime"
+  ]
+}
+```
+
+### Search Cities
+
+#### `GET /location/cities/search?q=makati`
+
+Searches for cities by name.
+
+**Response:**
+```json
+{
+  "success": true,
+  "query": "makati",
+  "total": 1,
+  "cities": [
+    {
+      "id": 2,
+      "name": "Makati",
+      "isCity": true,
+      "province": "Metro Manila",
+      "region": "National Capital Region (NCR)",
+      "displayName": "Makati, Metro Manila",
+      "hasLguScholarship": true
+    }
+  ]
+}
+```
+
+### Get City Details
+
+#### `GET /location/cities/:cityId`
+
+Returns detailed information about a city.
+
+### Get LGU Scholarship Cities
+
+#### `GET /location/lgu-scholarships`
+
+Returns all cities with LGU scholarship programs.
+
+**Response:**
+```json
+{
+  "success": true,
+  "total": 9,
+  "description": "Cities with Local Government Unit (LGU) scholarship programs",
+  "cities": [
+    { "cityId": 2, "name": "Makati City", "scholarshipName": "Makati City College Scholarship", "minResidencyYears": 3 },
+    { "cityId": 3, "name": "Taguig City", "scholarshipName": "Taguig City University Scholarship", "minResidencyYears": 5 },
+    { "cityId": 4, "name": "Quezon City", "scholarshipName": "QC-CHED Expanded Scholarship Program", "minResidencyYears": 3 }
+  ]
+}
+```
+
+### Process Location with Residency
+
+#### `POST /location/process-with-residency`
+
+Combined endpoint that detects location AND validates residency in one call.
+
+**Request Body:**
+```json
+{
+  "latitude": 14.5547,
+  "longitude": 121.0244,
+  "residencyYears": 5
+}
+```
+
+---
+
+## Validation Endpoints
+
+### Validate Quick Scan Profile
+
+#### `POST /validate/quick-scan`
+
+Validates all 1-Minute Scan inputs at once.
+
+**Request Body:**
+```json
+{
+  "gwa": 89.5,
+  "annualIncome": 280000,
+  "shsType": "Public",
+  "strand": "STEM",
+  "intendedCourse": "Computer Science",
+  "residencyYears": 5
+}
+```
+
+**Response (valid):**
+```json
+{
+  "success": true,
+  "validation": {
+    "isValid": true,
+    "errors": [],
+    "warnings": [],
+    "errorCount": 0,
+    "warningCount": 0
+  },
+  "isReadyForMatching": true
+}
+```
+
+**Response (with errors):**
+```json
+{
+  "success": true,
+  "validation": {
+    "isValid": false,
+    "errors": [
+      { "field": "gwa", "message": "GWA must be at least 70.0" },
+      { "field": "shsType", "message": "SHS type must be one of: Public, Private" }
+    ],
+    "warnings": [],
+    "errorCount": 2,
+    "warningCount": 0
+  },
+  "isReadyForMatching": false
+}
+```
+
+### Validate Course
+
+#### `POST /validate/course`
+
+Validates an intended course against the standardized degree program list.
+
+**Request Body:**
+```json
+{
+  "intendedCourse": "CompSci"
+}
+```
+
+**Response (with suggestions):**
+```json
+{
+  "success": true,
+  "field": "intendedCourse",
+  "value": "CompSci",
+  "validation": {
+    "isValid": true,
+    "errors": [],
+    "warnings": [
+      { "field": "intendedCourse", "message": "Did you mean \"Computer Science\"? Using standardized names helps with matching." }
+    ]
+  },
+  "suggestedCourse": "Computer Science"
+}
+```
+
+### Get Valid Courses
+
+#### `GET /validate/courses?q=eng`
+
+Returns list of valid degree programs for autocomplete.
+
+**Response:**
+```json
+{
+  "success": true,
+  "total": 12,
+  "query": "eng",
+  "courses": [
+    "Civil Engineering",
+    "Mechanical Engineering",
+    "Electrical Engineering",
+    "Electronics Engineering",
+    "Chemical Engineering",
+    "Computer Engineering",
+    "Industrial Engineering",
+    "Software Engineering"
+  ]
+}
+```
+
+### Get Valid Strands
+
+#### `GET /validate/strands`
+
+Returns valid SHS strands with descriptions.
+
+**Response:**
+```json
+{
+  "success": true,
+  "strands": [
+    { "code": "STEM", "name": "Science, Technology, Engineering, and Mathematics", "description": "For students pursuing science and tech-related degrees" },
+    { "code": "ABM", "name": "Accountancy, Business, and Management", "description": "For students pursuing business-related degrees" },
+    { "code": "HUMSS", "name": "Humanities and Social Sciences", "description": "For students pursuing social science and humanities degrees" },
+    { "code": "GAS", "name": "General Academic Strand", "description": "For students who are still undecided" },
+    { "code": "TVL", "name": "Technical-Vocational-Livelihood", "description": "For students pursuing technical and vocational courses" },
+    { "code": "Sports", "name": "Sports Track", "description": "For students pursuing sports-related careers" },
+    { "code": "Arts", "name": "Arts and Design Track", "description": "For students pursuing arts and design careers" }
+  ]
+}
+```
+
+### Get SHS Types
+
+#### `GET /validate/shs-types`
+
+Returns valid SHS types.
+
+---
+
+## Validation Rules Summary
+
+| Field | Validation | Range/Options |
+|-------|------------|---------------|
+| GWA | Required, numeric | 70.0 - 100.0 |
+| Annual Income | Required, positive integer | 0 - 50,000,000 |
+| SHS Type | Required, enum | Public, Private |
+| Strand | Optional, enum | STEM, ABM, HUMSS, GAS, TVL, Sports, Arts |
+| Intended Course | Optional, standardized list | ~100 degree programs |
+| Residency Years | Optional, positive integer | 0 - 50 |
+| Coordinates | Philippine bounds check | Lat: 4.5-21.5, Lng: 116.0-127.0 |
+

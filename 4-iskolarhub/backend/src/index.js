@@ -13,6 +13,9 @@ const matchRoutes = require('./routes/match');
 const deadlineRoutes = require('./routes/deadlines');
 const studentRoutes = require('./routes/students');
 const documentRoutes = require('./routes/documents');
+const vaultRoutes = require('./routes/vault');
+const locationRoutes = require('./routes/location');
+const validationRoutes = require('./routes/validation');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -39,6 +42,9 @@ app.use('/api/match', matchRoutes);
 app.use('/api/deadlines', deadlineRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/vault', vaultRoutes);
+app.use('/api/location', locationRoutes);
+app.use('/api/validate', validationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
