@@ -58,7 +58,7 @@ export default function HeroCard({ onStart }: HeroCardProps) {
                 >
                     <button
                         onClick={onStart}
-                        className="flex items-center gap-3 bg-white text-primary px-8 py-4 rounded-2xl font-bold mt-8 w-full sm:w-auto justify-center sm:justify-start hover:bg-blue-50 transition-all transform group-hover:translate-x-1 shadow-lg hover:shadow-xl"
+                        className="flex items-center gap-3 bg-white text-primary px-8 py-4 rounded-2xl font-bold mt-8 w-full sm:w-auto justify-center sm:justify-start hover:bg-blue-50 transition-all transform group-hover:translate-x-1 shadow-lg hover:shadow-xl active:scale-95"
                     >
                         <span>Start Eligibility Check</span>
                         <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />

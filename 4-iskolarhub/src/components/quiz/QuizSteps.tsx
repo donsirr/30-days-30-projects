@@ -46,33 +46,33 @@ export function StepAcademics({ data, updateData, onNext }: StepProps) {
                 <div className="inline-flex items-center justify-center size-16 rounded-full bg-blue-50 text-primary mb-4">
                     <BookOpen size={32} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">Academic Standing</h3>
-                <p className="text-gray-500">Let&apos;s start with your grades. What is your General Weighted Average (GWA)?</p>
+                <h3 className="text-2xl font-semibold text-slate-900">Academic Standing</h3>
+                <p className="text-slate-500">Let&apos;s start with your grades. What is your General Weighted Average (GWA)?</p>
             </div>
 
             <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-900">GWA / Average Grade</label>
+                <label className="block text-sm font-semibold text-slate-900">GWA / Average Grade</label>
                 <input
                     type="number"
                     value={data.gwa || ''}
                     onChange={(e) => updateData('gwa', e.target.value)}
                     placeholder="e.g. 92 or 1.5"
                     className={clsx(
-                        "w-full text-center text-3xl font-bold p-4 bg-transparent border-b-2 outline-none transition-all placeholder:text-slate-400 text-slate-900",
-                        !isValidGwa ? "border-red-500 text-red-600 focus:border-red-600" : "border-gray-200 focus:border-primary"
+                        "w-full text-center text-4xl font-bold p-6 bg-transparent border-b-2 outline-none transition-all placeholder:text-slate-300 text-slate-900",
+                        !isValidGwa ? "border-red-500 text-red-600 focus:border-red-600" : "border-slate-200 focus:border-primary"
                     )}
                     autoFocus
                 />
                 {!isValidGwa && (
                     <p className="text-xs text-center text-red-600 font-medium mt-1">Please enter a valid GWA (70-100 or 1.0-5.0)</p>
                 )}
-                <p className="text-xs text-center text-slate-500">If you use a 1.0-5.0 scale, we&apos;ll convert it automatically.</p>
+                <p className="text-xs text-center text-slate-400">If you use a 1.0-5.0 scale, we&apos;ll convert it automatically.</p>
             </div>
 
             <button
                 onClick={onNext}
                 disabled={!data.gwa}
-                className="w-full mt-6 bg-primary text-white py-4 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-900 transition-colors shadow-lg shadow-primary/20"
+                className="w-full mt-6 bg-primary text-white py-4 rounded-xl font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-800 active:scale-95 transition-all"
             >
                 Continue
             </button>
@@ -94,8 +94,8 @@ export function StepEducation({ data, updateData, onNext, onBack }: StepProps) {
                 <div className="inline-flex items-center justify-center size-16 rounded-full bg-green-50 text-secondary mb-4">
                     <School size={32} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">School Type</h3>
-                <p className="text-gray-500">Where did you graduate Senior High School?</p>
+                <h3 className="text-2xl font-semibold text-slate-900">School Type</h3>
+                <p className="text-slate-500">Where did you graduate Senior High School?</p>
             </div>
 
             <div className="grid grid-cols-1 gap-3">
@@ -104,19 +104,19 @@ export function StepEducation({ data, updateData, onNext, onBack }: StepProps) {
                         key={opt.id}
                         onClick={() => { updateData('educationType', opt.id); onNext(); }}
                         className={clsx(
-                            "p-4 rounded-xl border-2 text-left transition-all hover:shadow-md flex flex-col gap-1",
+                            "p-4 rounded-xl border-2 text-left transition-all hover:shadow-md flex flex-col gap-1 active:scale-[0.98]",
                             data.educationType === opt.id
                                 ? "border-secondary bg-green-50/50"
-                                : "border-gray-100 bg-white hover:border-green-100"
+                                : "border-slate-100 bg-white hover:border-green-100"
                         )}
                     >
-                        <span className="font-bold text-gray-900">{opt.label}</span>
-                        <span className="text-xs text-gray-500">{opt.desc}</span>
+                        <span className="font-bold text-slate-900">{opt.label}</span>
+                        <span className="text-xs text-slate-500">{opt.desc}</span>
                     </button>
                 ))}
             </div>
 
-            <button onClick={onBack} className="text-gray-400 font-medium text-sm hover:text-gray-600">Back</button>
+            <button onClick={onBack} className="text-slate-400 font-medium text-sm hover:text-slate-600 transition-colors">Back</button>
         </div>
     );
 }
@@ -131,8 +131,8 @@ export function StepPath({ data, updateData, onNext, onBack }: StepProps) {
                 <div className="inline-flex items-center justify-center size-16 rounded-full bg-purple-50 text-purple-600 mb-4">
                     <GraduationCap size={32} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">Target Path</h3>
-                <p className="text-gray-500">Select your SHS Strand or Target Course field.</p>
+                <h3 className="text-2xl font-semibold text-slate-900">Target Path</h3>
+                <p className="text-slate-500">Select your SHS Strand or Target Course field.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -141,10 +141,10 @@ export function StepPath({ data, updateData, onNext, onBack }: StepProps) {
                         key={strand}
                         onClick={() => { updateData('strand', strand); onNext(); }}
                         className={clsx(
-                            "p-3 rounded-xl border text-sm font-bold transition-all",
+                            "p-3 rounded-xl border text-sm font-bold transition-all active:scale-95",
                             data.strand === strand
                                 ? "bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-200"
-                                : "bg-white border-gray-200 text-gray-600 hover:border-purple-300 hover:text-purple-600"
+                                : "bg-white border-slate-200 text-slate-600 hover:border-purple-300 hover:text-purple-600"
                         )}
                     >
                         {strand}
@@ -152,7 +152,7 @@ export function StepPath({ data, updateData, onNext, onBack }: StepProps) {
                 ))}
             </div>
 
-            <button onClick={onBack} className="text-gray-400 font-medium text-sm hover:text-gray-600">Back</button>
+            <button onClick={onBack} className="text-slate-400 font-medium text-sm hover:text-slate-600 transition-colors">Back</button>
         </div>
     );
 }
@@ -171,8 +171,8 @@ export function StepFinancials({ data, updateData, onNext, onBack }: StepProps) 
                 <div className="inline-flex items-center justify-center size-16 rounded-full bg-orange-50 text-orange-500 mb-4">
                     <Banknote size={32} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">Financial Status</h3>
-                <p className="text-gray-500">This helps us match need-based scholarships.</p>
+                <h3 className="text-2xl font-semibold text-slate-900">Financial Status</h3>
+                <p className="text-slate-500">This helps us match need-based scholarships.</p>
             </div>
 
             <div className="space-y-3">
@@ -181,24 +181,24 @@ export function StepFinancials({ data, updateData, onNext, onBack }: StepProps) 
                         key={inc.id}
                         onClick={() => { updateData('income', inc.id); onNext(); }}
                         className={clsx(
-                            "w-full p-4 rounded-xl border-2 text-left transition-all hover:shadow-md flex items-center justify-between",
+                            "w-full p-4 rounded-xl border-2 text-left transition-all hover:shadow-md flex items-center justify-between active:scale-[0.98]",
                             data.income === inc.id
                                 ? "border-orange-500 bg-orange-50/50"
-                                : "border-gray-100 bg-white hover:border-orange-200"
+                                : "border-slate-100 bg-white hover:border-orange-200"
                         )}
                     >
                         <div>
-                            <h4 className="font-bold text-gray-900">{inc.label}</h4>
-                            <p className="text-xs text-gray-500">{inc.desc}</p>
+                            <h4 className="font-bold text-slate-900">{inc.label}</h4>
+                            <p className="text-xs text-slate-500">{inc.desc}</p>
                         </div>
-                        <div className={clsx("size-5 rounded-full border-2 flex items-center justify-center", data.income === inc.id ? "border-orange-500" : "border-gray-300")}>
+                        <div className={clsx("size-5 rounded-full border-2 flex items-center justify-center", data.income === inc.id ? "border-orange-500" : "border-slate-300")}>
                             {data.income === inc.id && <div className="size-2.5 rounded-full bg-orange-500" />}
                         </div>
                     </button>
                 ))}
             </div>
 
-            <button onClick={onBack} className="text-gray-400 font-medium text-sm hover:text-gray-600">Back</button>
+            <button onClick={onBack} className="text-slate-400 font-medium text-sm hover:text-slate-600 transition-colors">Back</button>
         </div>
     );
 }
@@ -259,8 +259,8 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
                 <div className="inline-flex items-center justify-center size-16 rounded-full bg-red-50 text-red-500 mb-4">
                     <MapPin size={32} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">Location</h3>
-                <p className="text-gray-500">Find scholarships available in your area.</p>
+                <h3 className="text-2xl font-semibold text-slate-900">Location</h3>
+                <p className="text-slate-500">Find scholarships available in your area.</p>
             </div>
 
             <div className="space-y-4">
@@ -268,7 +268,7 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
                 <button
                     onClick={handleAutoDetect}
                     disabled={isDetecting || !!detectedCity}
-                    className="w-full py-4 rounded-xl border-2 border-dashed border-red-200 bg-red-50/50 text-red-600 font-bold hover:bg-red-50 hover:border-red-300 transition-all flex items-center justify-center gap-2 group"
+                    className="w-full py-4 rounded-xl border-2 border-dashed border-red-200 bg-red-50/50 text-red-600 font-bold hover:bg-red-50 hover:border-red-300 active:scale-95 transition-all flex items-center justify-center gap-2 group"
                 >
                     {isDetecting ? (
                         <>
@@ -298,8 +298,8 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
 
                 {/* Residency Slider (Conditional) */}
                 {showResidency && (
-                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <label className="block text-sm font-bold text-gray-800 mb-1">
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <label className="block text-sm font-bold text-slate-800 mb-1">
                             Years lived in {detectedCity}?
                         </label>
                         <div className="flex items-center gap-4">
@@ -309,11 +309,11 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
                                 max="20"
                                 value={residencyYears}
                                 onChange={(e) => setResidencyYears(parseInt(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500"
+                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-500"
                             />
                             <span className="font-bold text-red-600 min-w-[3ch]">{residencyYears}+</span>
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-2">Required for local government grants.</p>
+                        <p className="text-[10px] text-slate-400 mt-2">Required for local government grants.</p>
                     </div>
                 )}
 
@@ -321,7 +321,7 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
                 {!detectedCity && (
                     <div className="relative">
                         <select
-                            className="w-full p-4 rounded-xl bg-slate-50 border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all font-medium text-slate-900 appearance-none cursor-pointer hover:bg-slate-100"
+                            className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all font-medium text-slate-900 appearance-none cursor-pointer hover:bg-slate-100"
                             value={data.location || ''}
                             onChange={(e) => updateData('location', e.target.value)}
                         >
@@ -337,11 +337,11 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
                 <button
                     onClick={onNext}
                     disabled={!data.location}
-                    className="w-full bg-primary text-white py-4 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-900 transition-colors shadow-lg shadow-primary/20"
+                    className="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-blue-800 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20"
                 >
                     See Matches
                 </button>
-                <button onClick={onBack} className="w-full py-3 text-gray-400 font-medium text-sm hover:text-gray-600">Back</button>
+                <button onClick={onBack} className="w-full py-3 text-slate-400 font-medium text-sm hover:text-slate-600 transition-colors">Back</button>
             </div>
         </div>
     );
