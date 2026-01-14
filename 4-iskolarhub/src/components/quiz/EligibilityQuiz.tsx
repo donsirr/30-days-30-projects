@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, Loader2 } from 'lucide-react';
 import { StepAcademics, StepEducation, StepPath, StepFinancials, StepLocation, slideVariants, QuizData } from './QuizSteps';
@@ -24,9 +24,9 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
         location: ''
     });
 
-    const updateData = (field: keyof QuizData, value: string) => {
+    const updateData = useCallback((field: keyof QuizData, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
-    };
+    }, []);
 
     const nextStep = () => {
         if (step < 5) {
@@ -55,13 +55,13 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            {/* Backdrop */}
+            {/* Backdrop - Optimized: Removed blur for performance */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={onClose}
-                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                className="absolute inset-0 bg-slate-900/80"
             />
 
             {/* Modal Card */}
@@ -69,6 +69,7 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ duration: 0.2 }}
                 className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh]"
             >
                 {/* Header (Hidden on Result) */}
@@ -137,7 +138,7 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
                                 initial="enter"
                                 animate="center"
                                 exit="exit"
-                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                transition={{ duration: 0.3, ease: "easeInOut" }}
                             >
                                 {step === 1 && <StepAcademics data={formData} updateData={updateData} onNext={nextStep} onBack={prevStep} />}
                                 {step === 2 && <StepEducation data={formData} updateData={updateData} onNext={nextStep} onBack={prevStep} />}
