@@ -1,15 +1,48 @@
 /**
  * @iskolarhub/shared - Constants
+ * ============================================================
  * Philippine-specific data and application constants
+ * 
+ * This file contains all shared constants used by both the
+ * Frontend (UI dropdowns, validation) and Backend (matching engine).
+ * 
+ * @author Iskolar-Hub Team
+ * @version 1.0.0
+ * @since 2026-01-14
+ * ============================================================
  */
 
 import type { StrandType, DocumentType, ProviderType, ShsType } from './types';
 
 // ============================================================
-// DOCUMENT TYPES
+// GRADE ROUNDING LOGIC
 // ============================================================
 
+/**
+ * Grace buffer for GWA rounding
+ * Used when comparing student GWA to scholarship requirements
+ * Example: If min_gwa is 85.0 and GRACE_BUFFER is 0.5,
+ * students with GWA >= 84.5 will still be considered eligible
+ */
+export const GRACE_BUFFER = 0.5;
+
+// ============================================================
+// DOCUMENT TYPES (The "Big 4")
+// ============================================================
+
+/**
+ * The "Big 4" required documents for most Philippine scholarships
+ * - PSA: Philippine Statistics Authority Birth Certificate
+ * - Form138: High School Report Card
+ * - ITR: Income Tax Return (or Certificate of Indigency)
+ * - GoodMoral: Certificate of Good Moral Character
+ */
 export const DOCUMENT_TYPES: readonly DocumentType[] = ['PSA', 'Form138', 'ITR', 'GoodMoral'] as const;
+
+/**
+ * Alias for DOCUMENT_TYPES - commonly used name
+ */
+export const BIG_4_DOCS = DOCUMENT_TYPES;
 
 export const DOCUMENT_DISPLAY_NAMES: Record<DocumentType, string> = {
     PSA: 'PSA Birth Certificate',
@@ -29,6 +62,10 @@ export const DOCUMENT_DESCRIPTIONS: Record<DocumentType, string> = {
 // SHS STRANDS
 // ============================================================
 
+/**
+ * Senior High School Academic Track and Strand options
+ * These map to the DepEd K-12 curriculum strands
+ */
 export const STRAND_TYPES: readonly StrandType[] = [
     'STEM',
     'ABM',
@@ -38,6 +75,11 @@ export const STRAND_TYPES: readonly StrandType[] = [
     'Sports',
     'Arts',
 ] as const;
+
+/**
+ * Alias for STRAND_TYPES - commonly requested format
+ */
+export const STRANDS = STRAND_TYPES;
 
 export interface StrandInfo {
     code: StrandType;
@@ -412,6 +454,54 @@ export const SCORING_WEIGHTS = {
 } as const;
 
 export const MAX_POSSIBLE_SCORE = Object.values(SCORING_WEIGHTS).reduce((a, b) => a + b, 0);
+
+// ============================================================
+// PRIORITY COURSES
+// ============================================================
+
+/**
+ * Priority courses that give students higher match scores
+ * These are typically STEM and in-demand courses that many
+ * scholarship providers specifically target
+ */
+export const PRIORITY_COURSES: readonly string[] = [
+    // Engineering (DOST priority)
+    'Civil Engineering',
+    'Mechanical Engineering',
+    'Electrical Engineering',
+    'Electronics Engineering',
+    'Chemical Engineering',
+    'Computer Engineering',
+    'Industrial Engineering',
+
+    // Information Technology
+    'Computer Science',
+    'Information Technology',
+    'Data Science',
+    'Software Engineering',
+
+    // Sciences
+    'Mathematics',
+    'Physics',
+    'Chemistry',
+    'Biology',
+    'Statistics',
+
+    // Health Sciences
+    'Medicine',
+    'Nursing',
+    'Pharmacy',
+    'Medical Technology',
+
+    // Agriculture & Food Security
+    'Agriculture',
+    'Food Technology',
+    'Veterinary Medicine',
+
+    // Education (for teacher shortage)
+    'Secondary Education - Math',
+    'Secondary Education - Science',
+] as const;
 
 // ============================================================
 // UI CONSTANTS

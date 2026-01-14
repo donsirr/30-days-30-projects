@@ -1,25 +1,65 @@
 /**
  * @iskolarhub/shared - Types
- * Shared TypeScript interfaces for the Iskolar-Hub platform
- * This is "The Contract" between frontend and backend
+ * ============================================================
+ * THE CONTRACT between Frontend (Gemini 3 Pro) and Backend (Claude Opus 4.5)
+ * 
+ * This file defines all shared TypeScript interfaces for the Iskolar-Hub platform.
+ * Any changes here will trigger type errors in both frontend and backend if they
+ * are no longer compliant.
+ * 
+ * @author Iskolar-Hub Team
+ * @version 1.0.0
+ * @since 2026-01-14
+ * ============================================================
  */
 
 // ============================================================
-// ENUMS
+// ENUMS & TYPE ALIASES
 // ============================================================
 
+/**
+ * Scholarship provider category
+ * - Government: DOST, CHED, TESDA, etc.
+ * - Private: SM Foundation, Ayala, Megaworld, etc.
+ * - LGU: City/Municipal scholarships (Makati, Taguig, QC)
+ * - International: Foreign government/org scholarships
+ * - NGO: Non-profit organizations
+ */
 export type ProviderType = 'Government' | 'Private' | 'LGU' | 'International' | 'NGO';
 
+/**
+ * Scholarship category (alias for ProviderType for cleaner imports)
+ */
+export type ScholarshipCategory = ProviderType;
+
+/**
+ * Senior High School type
+ */
 export type ShsType = 'Public' | 'Private';
 
+/**
+ * SHS Academic/Track strands
+ */
 export type StrandType = 'STEM' | 'ABM' | 'HUMSS' | 'GAS' | 'TVL' | 'Sports' | 'Arts';
 
+/**
+ * The "Big 4" required documents for most scholarships
+ */
 export type DocumentType = 'PSA' | 'Form138' | 'ITR' | 'GoodMoral';
 
+/**
+ * Document processing status
+ */
 export type DocumentStatus = 'pending' | 'uploaded' | 'verified' | 'rejected';
 
+/**
+ * Scholarship application status
+ */
 export type ScholarshipStatus = 'open' | 'closed' | 'upcoming';
 
+/**
+ * Deadline urgency levels
+ */
 export type UrgencyLevel = 'last_day' | 'critical' | 'very_urgent' | 'urgent' | 'soon' | 'normal';
 
 // ============================================================
@@ -186,31 +226,72 @@ export interface ScoringBreakdown {
 
 /**
  * Individual scholarship match result
+ * This is the core output structure from the matching engine
  */
 export interface ScholarshipMatch {
+    /** The matched scholarship details */
     scholarship: Scholarship;
+    /** Raw match score (0 to MAX_POSSIBLE_SCORE) */
     matchScore: number;
+    /** Percentage match (0-100) */
     matchPercentage: number;
+    /** Detailed breakdown of how the score was calculated */
     scoringBreakdown: ScoringBreakdown;
+    /** Days until application deadline */
     daysRemaining: number;
+    /** True if deadline is within 14 days */
     isUrgent: boolean;
+    /** Documents the student still needs to upload */
     missingDocuments: DocumentType[];
+    /** True if all hard eligibility requirements are met */
     isHardMatch: boolean;
 }
 
 /**
- * Match results summary
+ * Simplified match result with human-readable reasons
+ * Used for quick display in UI cards
+ */
+export interface MatchResult {
+    /** Scholarship ID */
+    scholarshipId: string;
+    /** Scholarship name */
+    scholarshipName: string;
+    /** Provider/Category (LGU, National, Private) */
+    category: ScholarshipCategory;
+    /** Match score percentage (0-100) */
+    matchScore: number;
+    /** Human-readable reasons why this scholarship matched */
+    reasons: string[];
+    /** Application deadline */
+    deadline: string;
+    /** Days remaining until deadline */
+    daysRemaining: number;
+    /** Is the deadline urgent (<14 days)? */
+    isUrgent: boolean;
+    /** Is this a strong match (>70%)? */
+    isStrongMatch: boolean;
+    /** Missing eligibility reasons (if any) */
+    warnings?: string[];
+}
+
+/**
+ * Match results summary statistics
  */
 export interface MatchSummary {
+    /** Matches with >70% score */
     highMatches: number;
+    /** Matches with 40-70% score */
     mediumMatches: number;
+    /** Matches with <40% score */
     lowMatches: number;
+    /** Scholarships with urgent deadlines */
     urgentDeadlines: number;
+    /** Count by provider type */
     byProviderType: Record<ProviderType, number>;
 }
 
 /**
- * Full match response
+ * Full match response from /api/match endpoint
  */
 export interface MatchResponse {
     success: boolean;
@@ -219,7 +300,10 @@ export interface MatchResponse {
     totalMatches: number;
     processingTimeMs: number;
     timestamp: string;
+    /** Detailed matches (for full profile matching) */
     matches: ScholarshipMatch[];
+    /** Simplified results (for quick scan) */
+    results?: MatchResult[];
     summary: MatchSummary;
 }
 
