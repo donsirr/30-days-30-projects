@@ -205,8 +205,53 @@ export function StepFinancials({ data, updateData, onNext, onBack }: StepProps) 
 
 // --- Step 5: Location ---
 export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
-    // Simplified list for demo
+    const [isDetecting, setIsDetecting] = React.useState(false);
+    const [detectedCity, setDetectedCity] = React.useState<string | null>(null);
+    const [showResidency, setShowResidency] = React.useState(false);
+    const [residencyYears, setResidencyYears] = React.useState(0);
+
     const regions = ["Metro Manila", "Cebu", "Davao", "Iloilo", "Baguio", "Others"];
+
+    // Mock Reverse Geocoding Map
+    const mockGeocode = (lat: number, long: number) => {
+        // Simple mock: if coordinates exist, assume "Quezon City" for this demo
+        // In prod this would call Google Maps / OpenStreetMap API
+        return "Quezon City";
+    };
+
+    const handleAutoDetect = () => {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            return;
+        }
+
+        setIsDetecting(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                // Success
+                setTimeout(() => { // Artificially delay for realism
+                    const city = mockGeocode(position.coords.latitude, position.coords.longitude);
+                    setDetectedCity(city);
+                    updateData('location', 'Metro Manila'); // Map city to region for now
+                    setShowResidency(city === 'Quezon City' || city === 'Makati');
+                    setIsDetecting(false);
+                    // Persist to local storage
+                    try {
+                        localStorage.setItem('iskolar_location', JSON.stringify({ city, lat: position.coords.latitude, long: position.coords.longitude }));
+                    } catch (e) {
+                        // ignore
+                    }
+                }, 1500);
+            },
+            (error) => {
+                // Error / Denied
+                setIsDetecting(false);
+                setShowResidency(false);
+                console.error(error);
+                // Fallback is just staying on the manual input
+            }
+        );
+    };
 
     return (
         <div className="flex flex-col gap-6 pb-12">
@@ -219,18 +264,73 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
             </div>
 
             <div className="space-y-4">
-                <div className="relative">
-                    <select
-                        className="w-full p-4 rounded-xl bg-slate-50 border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all font-medium text-slate-900 appearance-none cursor-pointer hover:bg-slate-100"
-                        value={data.location || ''}
-                        onChange={(e) => updateData('location', e.target.value)}
-                    >
-                        <option value="" disabled className="text-slate-400">Select your region</option>
-                        {regions.map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
-                    {/* Select Arrow Icon Overlay could go here, but appearance-none removes default, so we might want to add custom arrow or just rely on browser default if we remove appearance-none. The prompt asked for custom bg. Let's keep simple for now or add pointer-events-none icon. */}
-                </div>
-                <p className="text-xs text-center text-slate-500">Selecting &apos;Others&apos; will show nationwide grants.</p>
+                {/* Auto Detection Button */}
+                <button
+                    onClick={handleAutoDetect}
+                    disabled={isDetecting || !!detectedCity}
+                    className="w-full py-4 rounded-xl border-2 border-dashed border-red-200 bg-red-50/50 text-red-600 font-bold hover:bg-red-50 hover:border-red-300 transition-all flex items-center justify-center gap-2 group"
+                >
+                    {isDetecting ? (
+                        <>
+                            <div className="size-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                            <span>Detecting Location...</span>
+                        </>
+                    ) : detectedCity ? (
+                        <>
+                            <MapPin size={20} className="fill-red-600 text-red-600" />
+                            <span>Detected: {detectedCity}</span>
+                        </>
+                    ) : (
+                        <>
+                            <MapPin size={20} className="group-hover:scale-110 transition-transform" />
+                            <span>Use Current Location</span>
+                        </>
+                    )}
+                </button>
+
+                {detectedCity && (
+                    <p className="text-center text-xs">
+                        <button onClick={() => { setDetectedCity(null); setShowResidency(false); updateData('location', ''); }} className="text-red-500 hover:underline">
+                            Change Manually
+                        </button>
+                    </p>
+                )}
+
+                {/* Residency Slider (Conditional) */}
+                {showResidency && (
+                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <label className="block text-sm font-bold text-gray-800 mb-1">
+                            Years lived in {detectedCity}?
+                        </label>
+                        <div className="flex items-center gap-4">
+                            <input
+                                type="range"
+                                min="0"
+                                max="20"
+                                value={residencyYears}
+                                onChange={(e) => setResidencyYears(parseInt(e.target.value))}
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500"
+                            />
+                            <span className="font-bold text-red-600 min-w-[3ch]">{residencyYears}+</span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-2">Required for local government grants.</p>
+                    </div>
+                )}
+
+                {/* Manual Fallback (Only if not detected) */}
+                {!detectedCity && (
+                    <div className="relative">
+                        <select
+                            className="w-full p-4 rounded-xl bg-slate-50 border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all font-medium text-slate-900 appearance-none cursor-pointer hover:bg-slate-100"
+                            value={data.location || ''}
+                            onChange={(e) => updateData('location', e.target.value)}
+                        >
+                            <option value="" disabled className="text-slate-400">Select your region</option>
+                            {regions.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                        <p className="text-xs text-center text-slate-500 mt-2">Selecting &apos;Others&apos; will show nationwide grants.</p>
+                    </div>
+                )}
             </div>
 
             <div className="mt-4 space-y-3">
