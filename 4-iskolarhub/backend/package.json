@@ -4,8 +4,8 @@
     "description": "Backend API for Iskolar-Hub Scholarship Matching Engine",
     "main": "dist/backend/src/index.js",
     "scripts": {
-        "start": "node dist/backend/src/index.js",
-        "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+        "start": "node src/index.js",
+        "dev": "node --watch src/index.js",
         "build": "tsc",
         "db:migrate": "ts-node src/database/migrate.ts",
         "db:seed": "ts-node src/database/seed.ts",
