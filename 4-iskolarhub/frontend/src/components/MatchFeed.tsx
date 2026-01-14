@@ -1,63 +1,63 @@
 'use client';
 
-import React from 'react';
-import { TrendingUp } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { TrendingUp, Lightbulb } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ScholarshipCard, { Requirement } from './ScholarshipCard';
 
 export default function MatchFeed() {
-    const matches = [
-        {
-            id: 1,
-            title: 'SM Foundation Scholarship',
-            org: 'SM Foundation',
-            matchScore: 98,
-            daysLeft: 12,
-            amount: '₱100k/yr',
-            requirements: [
-                { type: 'gwa', label: 'Minimum GWA', value: '88% or higher', isMet: true },
-                { type: 'income', label: 'Household Income', value: '< ₱250k/year', isMet: true },
-                { type: 'location', label: 'Location', value: 'NCR', isMet: true },
-            ] as Requirement[]
-        },
-        {
-            id: 2,
-            title: 'Landbank Gawad Patnubay',
-            org: 'Landbank',
-            matchScore: 95,
-            daysLeft: 35,
-            amount: 'Full Tuition',
-            requirements: [
-                { type: 'gwa', label: 'Minimum GWA', value: '85% or higher', isMet: true },
-                { type: 'document', label: 'Course', value: 'Agriculture Related', isMet: true },
-            ] as Requirement[]
-        },
-        {
-            id: 3,
-            title: 'Cebu City Scholarship',
-            org: 'Cebu City Govt',
-            matchScore: 89,
-            daysLeft: 5,
-            amount: '₱20k/sem',
-            requirements: [
-                { type: 'location', label: 'Residency', value: 'Cebu City', isMet: true },
-                { type: 'gwa', label: 'Minimum GWA', value: '85% or higher', isMet: true },
-                { type: 'income', label: 'Income', value: 'Any', isMet: true },
-            ] as Requirement[]
-        },
-        {
-            id: 4,
-            title: 'Megaworld Foundation',
-            org: 'Megaworld',
-            matchScore: 85,
-            daysLeft: 45,
-            amount: 'Full + Allow',
-            requirements: [
-                { type: 'gwa', label: 'Minimum GWA', value: '85% or higher', isMet: true },
-                { type: 'document', label: 'Certificate', value: 'Good Moral', isMet: false },
-            ] as Requirement[]
-        },
-    ];
+    const [matches, setMatches] = useState<any[]>([]);
+    const [hasLoaded, setHasLoaded] = useState(false);
+
+    const loadMatches = () => {
+        try {
+            const stored = localStorage.getItem('matchResults');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+
+                // Map API MatchResult to UI format
+                const mapped = parsed.map((m: any) => ({
+                    id: m.scholarshipId,
+                    title: m.scholarshipName,
+                    org: m.category,
+                    matchScore: m.matchScore,
+                    daysLeft: m.daysRemaining,
+                    amount: 'View Details',
+                    requirements: [
+                        ...(m.reasons || []).map((r: string) => ({
+                            type: 'gwa', // simplified mapping
+                            label: 'Match Factor',
+                            value: r,
+                            isMet: true
+                        })),
+                        ...(m.warnings || []).map((w: string) => ({
+                            type: 'document',
+                            label: 'Attention Needed',
+                            value: w,
+                            isMet: false
+                        }))
+                    ]
+                }));
+
+                setMatches(mapped);
+            }
+        } catch (e) {
+            console.error('Failed to load matches', e);
+        } finally {
+            setHasLoaded(true);
+        }
+    };
+
+    useEffect(() => {
+        // Initial load
+        loadMatches();
+
+        // Listen for updates from Quiz
+        const handleUpdate = () => loadMatches();
+        window.addEventListener('matchesUpdated', handleUpdate);
+
+        return () => window.removeEventListener('matchesUpdated', handleUpdate);
+    }, []);
 
     const container = {
         hidden: { opacity: 0 },
@@ -69,8 +69,33 @@ export default function MatchFeed() {
         }
     };
 
+    if (!hasLoaded) return null;
+
+    if (matches.length === 0) {
+        return (
+            <div className="col-span-1 md:col-span-3 flex flex-col gap-4 mt-2">
+                <div className="flex items-center justify-between px-2">
+                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <TrendingUp className="text-secondary" size={24} />
+                        Recommended for You
+                    </h3>
+                </div>
+
+                <div className="bg-white rounded-3xl p-8 border border-dashed border-slate-300 text-center">
+                    <div className="inline-flex items-center justify-center size-16 rounded-full bg-yellow-50 text-yellow-500 mb-4">
+                        <Lightbulb size={32} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2">No Matches Found Yet</h3>
+                    <p className="text-slate-500 max-w-md mx-auto mb-6">
+                        Try taking the 1-Minute Scan to find scholarships that fit your profile. You can also try adjusting your filters or looking for LGU scholarships in your specific city.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="col-span-1 md:col-span-3 flex flex-col gap-4 mt-2">
+        <div id="match-feed" className="col-span-1 md:col-span-3 flex flex-col gap-4 mt-2">
             <div className="flex items-center justify-between px-2">
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                     <TrendingUp className="text-secondary" size={24} />

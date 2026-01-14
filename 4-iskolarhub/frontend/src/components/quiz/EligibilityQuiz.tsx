@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle, Loader2 } from 'lucide-react';
+import { X, CheckCircle } from 'lucide-react';
 import { StepAcademics, StepEducation, StepPath, StepFinancials, StepLocation, slideVariants, QuizData } from './QuizSteps';
 
 interface EligibilityQuizProps {
@@ -10,21 +10,40 @@ interface EligibilityQuizProps {
     onClose: () => void;
 }
 
+const SkeletonLoader = () => (
+    <div className="w-full max-w-md mx-auto py-8 space-y-6">
+        <div className="h-6 bg-slate-200 rounded-full w-2/3 mx-auto animate-pulse mb-8" />
+        <div className="grid grid-cols-2 gap-4">
+            <div className="h-32 bg-slate-100 rounded-2xl animate-pulse" />
+            <div className="h-32 bg-slate-100 rounded-2xl animate-pulse" />
+            <div className="col-span-2 h-24 bg-slate-100 rounded-2xl animate-pulse" />
+        </div>
+        <div className="space-y-2 mt-4">
+            <div className="h-4 bg-slate-100 rounded w-full animate-pulse" />
+            <div className="h-4 bg-slate-100 rounded w-5/6 animate-pulse" />
+        </div>
+    </div>
+);
+
 export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProps) {
     const [step, setStep] = useState(1);
     const [direction, setDirection] = useState(0);
     const [isCalculating, setIsCalculating] = useState(false);
     const [showResult, setShowResult] = useState(false);
+    const [matchCount, setMatchCount] = useState(0);
 
     const [formData, setFormData] = useState<QuizData>({
         gwa: '',
         educationType: '',
         strand: '',
         income: '',
-        location: ''
+        location: '',
+        cityId: undefined,
+        residencyYears: undefined
     });
 
-    const updateData = useCallback((field: keyof QuizData, value: string) => {
+    // Updated to accept string or number
+    const updateData = useCallback((field: keyof QuizData, value: string | number) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     }, []);
 
@@ -42,20 +61,86 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
         setStep(prev => prev - 1);
     };
 
-    const handleFinish = () => {
+    const handleFinish = async () => {
         setIsCalculating(true);
-        // Simulate calculation
-        setTimeout(() => {
+
+        // Map frontend values to backend schema
+        const incomeMap: Record<string, number> = {
+            'low': 200000,
+            'mid': 350000,
+            'high': 600000
+        };
+
+        const eduMap: Record<string, 'Public' | 'Private'> = {
+            'public': 'Public',
+            'private-voucher': 'Private',
+            'private-full': 'Private'
+        };
+
+        const payload = {
+            gwa: parseFloat(formData.gwa),
+            annualIncome: incomeMap[formData.income] || 0,
+            shsType: eduMap[formData.educationType] || 'Public',
+            strand: formData.strand,
+            // Only strictly required fields for quick match
+            cityId: typeof formData.cityId === 'string' ? parseInt(formData.cityId) : formData.cityId,
+            residencyYears: typeof formData.residencyYears === 'string' ? parseInt(formData.residencyYears) : formData.residencyYears,
+        };
+
+        try {
+            // Using relative URL - proxied by Next.js or direct call if backend is on same domain/CORS
+            // Assuming Next.js dev server proxies /api to backend port 3001 or using full URL
+            const apiUrl = 'http://localhost:3001/api/match/quick';
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                console.error('Match failed'); // Should handle error UI
+            }
+
+            const matches = await response.json();
+
+            // Persist to LocalStorage for persistence across navigation
+            if (Array.isArray(matches)) {
+                localStorage.setItem('matchResults', JSON.stringify(matches));
+                localStorage.setItem('lastQuizDate', new Date().toISOString());
+
+                // Dispatch event to update MatchFeed
+                window.dispatchEvent(new Event('matchesUpdated'));
+
+                setMatchCount(matches.length);
+
+                // Simulate bento loader timing for UX (at least 1.5s)
+                setTimeout(() => {
+                    setIsCalculating(false);
+                    setShowResult(true);
+                }, 1500);
+            } else {
+                throw new Error('Invalid response format');
+            }
+
+        } catch (error) {
+            console.error('Error calculating matches:', error);
             setIsCalculating(false);
-            setShowResult(true);
-        }, 2000);
+            // Optionally show error state
+            alert('Something went wrong calculating your matches. Please try again.');
+        }
+    };
+
+    const handleViewMatches = () => {
+        onClose();
+        // Scroll to feed?
+        const feed = document.getElementById('match-feed');
+        if (feed) feed.scrollIntoView({ behavior: 'smooth' });
     };
 
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            {/* Backdrop - Optimized: Removed blur for performance */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -64,7 +149,6 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
                 className="absolute inset-0 bg-slate-900/80"
             />
 
-            {/* Modal Card */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -72,7 +156,6 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
                 transition={{ duration: 0.2 }}
                 className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh]"
             >
-                {/* Header (Hidden on Result) */}
                 {!showResult && !isCalculating && (
                     <div className="px-8 pt-8 pb-4 flex items-center justify-between">
                         <div>
@@ -89,7 +172,6 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
                     </div>
                 )}
 
-                {/* Content Area */}
                 <div className="p-8 overflow-y-auto">
                     <AnimatePresence mode="wait" custom={direction}>
                         {isCalculating ? (
@@ -98,11 +180,11 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="flex flex-col items-center justify-center py-12 text-center"
+                                className="text-center"
                             >
-                                <Loader2 size={48} className="text-primary animate-spin mb-4" />
-                                <h3 className="text-xl font-bold text-gray-800">Analyzing your profile...</h3>
-                                <p className="text-gray-500 mt-2">Matching with 50+ scholarship databases</p>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2">Analysing Profile...</h3>
+                                <p className="text-slate-500 text-sm mb-6">Cross-referencing 50+ scholarships</p>
+                                <SkeletonLoader />
                             </motion.div>
                         ) : showResult ? (
                             <motion.div
@@ -114,8 +196,8 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
                                 <div className="size-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                                     <CheckCircle size={40} />
                                 </div>
-                                <h2 className="text-3xl font-bold text-gray-900 mb-2">Great News!</h2>
-                                <p className="text-gray-600 mb-8">We found <span className="text-primary font-bold text-xl">12</span> scholarships that match your profile.</p>
+                                <h2 className="text-3xl font-bold text-gray-900 mb-2">Analysis Complete!</h2>
+                                <p className="text-gray-600 mb-8">We found <span className="text-primary font-bold text-xl">{matchCount}</span> scholarships that match your profile.</p>
 
                                 <div className="bg-blue-50 p-4 rounded-xl text-left mb-8 border border-blue-100">
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">YOUR PROFILE SUMMARY</p>
@@ -126,7 +208,7 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
                                     </div>
                                 </div>
 
-                                <button onClick={onClose} className="w-full bg-primary text-white py-4 rounded-xl font-bold shadow-lg shadow-primary/30 hover:bg-blue-900 transition-all">
+                                <button onClick={handleViewMatches} className="w-full bg-primary text-white py-4 rounded-xl font-bold shadow-lg shadow-primary/30 hover:bg-blue-900 transition-all">
                                     View Matches
                                 </button>
                             </motion.div>

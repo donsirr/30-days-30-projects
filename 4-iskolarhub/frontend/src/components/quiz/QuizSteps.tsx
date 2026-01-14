@@ -8,12 +8,14 @@ export interface QuizData {
     strand: string;
     income: string;
     location: string;
+    cityId?: number;
+    residencyYears?: number;
 }
 
 // Shared Props Interface
 export interface StepProps {
     data: QuizData;
-    updateData: (field: keyof QuizData, value: string) => void;
+    updateData: (field: keyof QuizData, value: any) => void;
     onNext: () => void;
     onBack: () => void;
 }
@@ -208,7 +210,6 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
     const [isDetecting, setIsDetecting] = React.useState(false);
     const [detectedCity, setDetectedCity] = React.useState<string | null>(null);
     const [showResidency, setShowResidency] = React.useState(false);
-    const [residencyYears, setResidencyYears] = React.useState(0);
 
     const regions = ["Metro Manila", "Cebu", "Davao", "Iloilo", "Baguio", "Others"];
 
@@ -232,6 +233,10 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
                 setTimeout(() => { // Artificially delay for realism
                     const city = mockGeocode();
                     setDetectedCity(city);
+                    // Map "Quezon City" to ID 4 (Example mapping)
+                    if (city === "Quezon City") {
+                        updateData('cityId', 4);
+                    }
                     updateData('location', 'Metro Manila'); // Map city to region for now
                     setShowResidency(city === 'Quezon City' || city === 'Makati');
                     setIsDetecting(false);
@@ -307,11 +312,11 @@ export function StepLocation({ data, updateData, onNext, onBack }: StepProps) {
                                 type="range"
                                 min="0"
                                 max="20"
-                                value={residencyYears}
-                                onChange={(e) => setResidencyYears(parseInt(e.target.value))}
+                                value={data.residencyYears || 0}
+                                onChange={(e) => updateData('residencyYears', parseInt(e.target.value))}
                                 className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-500"
                             />
-                            <span className="font-bold text-red-600 min-w-[3ch]">{residencyYears}+</span>
+                            <span className="font-bold text-red-600 min-w-[3ch]">{data.residencyYears || 0}+</span>
                         </div>
                         <p className="text-[10px] text-slate-400 mt-2">Required for local government grants.</p>
                     </div>

@@ -16,13 +16,11 @@ import {
     QuickScanProfile,
     StudentProfile,
     MatchResult,
-    ScholarshipMatch,
     ScoringBreakdown,
     ScholarshipCategory,
     DocumentType,
     GRACE_BUFFER,
     PRIORITY_COURSES,
-    MAX_POSSIBLE_SCORE,
 } from '@iskolarhub/shared';
 
 // ============================================================
