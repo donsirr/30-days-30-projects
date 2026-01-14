@@ -4,7 +4,11 @@ import React from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function HeroCard() {
+interface HeroCardProps {
+    onStart: () => void;
+}
+
+export default function HeroCard({ onStart }: HeroCardProps) {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -52,7 +56,10 @@ export default function HeroCard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
                 >
-                    <button className="flex items-center gap-3 bg-white text-primary px-8 py-4 rounded-2xl font-bold mt-8 w-full sm:w-auto justify-center sm:justify-start hover:bg-blue-50 transition-all transform group-hover:translate-x-1 shadow-lg hover:shadow-xl">
+                    <button
+                        onClick={onStart}
+                        className="flex items-center gap-3 bg-white text-primary px-8 py-4 rounded-2xl font-bold mt-8 w-full sm:w-auto justify-center sm:justify-start hover:bg-blue-50 transition-all transform group-hover:translate-x-1 shadow-lg hover:shadow-xl"
+                    >
                         <span>Start Eligibility Check</span>
                         <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                     </button>
