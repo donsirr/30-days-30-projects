@@ -20,7 +20,7 @@ export default function DocumentVaultCard() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="col-span-1 md:col-span-1 md:row-span-1 bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col"
+            className="col-span-1 md:col-span-1 md:row-span-1 bg-white rounded-[2rem] p-6 border border-[#1A365D]/10 shadow-sm hover:shadow-md transition-all flex flex-col"
         >
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">

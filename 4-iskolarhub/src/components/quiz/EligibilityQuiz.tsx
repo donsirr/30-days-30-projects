@@ -69,7 +69,7 @@ export default function EligibilityQuiz({ isOpen, onClose }: EligibilityQuizProp
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh]"
             >
                 {/* Header (Hidden on Result) */}
                 {!showResult && !isCalculating && (
