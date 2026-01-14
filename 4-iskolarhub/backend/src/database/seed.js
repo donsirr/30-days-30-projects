@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+// Load environment variables immediately
+require('dotenv').config();
 const db = require('./db');
 
 (async () => {
