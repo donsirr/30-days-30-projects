@@ -15,7 +15,11 @@ import {
   CheckCircle2,
   AlertCircle,
   Command,
-  ChevronDown
+  ChevronDown,
+  Trash2,
+  FileJson,
+  History,
+  LayoutGrid
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
@@ -28,8 +32,6 @@ function cn(...inputs: ClassValue[]) {
 }
 
 // --- Types ---
-// Updated Aspect Ratios List
-// Automatic, 1:1, 3:2, 2:3, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
 type AspectRatio = "Auto" | "1:1" | "3:2" | "2:3" | "3:4" | "4:3" | "4:5" | "5:4" | "9:16" | "16:9" | "21:9";
 type Resolution = "1K" | "2K" | "4K";
 type ImageFormat = "PNG" | "JPEG";
@@ -151,6 +153,8 @@ const LabelWithTooltip = ({ label, tooltip, required }: { label: string, tooltip
 
 export default function AIPlayground() {
   // State
+  const [activeTab, setActiveTab] = useState<"gallery" | "history">("gallery");
+  const [showJson, setShowJson] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [refImages, setRefImages] = useState<File[]>([]);
   const [ar, setAr] = useState<AspectRatio>("1:1");
@@ -249,6 +253,20 @@ export default function AIPlayground() {
     }
   };
 
+  const downloadImage = (url: string, filename: string) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const deleteImage = (id: string) => {
+    setGeneratedImages(prev => prev.filter(img => img.id !== id));
+  };
+
+
   const getCodeSnippet = () => {
     return `
 import requests
@@ -283,10 +301,10 @@ print(response.json())
     <div className="flex h-screen w-full flex-col md:flex-row bg-[#121212] text-[#EDEDED] overflow-hidden font-sans selection:bg-[#FFEA00]/30 selection:text-[#FFEA00]">
 
       {/* --- Left Sidebar: Controls --- */}
-      <aside className="w-full md:w-[400px] flex-shrink-0 flex flex-col border-r border-[#2C2C2C] bg-[#181818] md:h-full overflow-y-auto custom-scrollbar">
+      <aside className="w-full md:w-[400px] flex-shrink-0 flex flex-col border-r border-[#2C2C2C] bg-[#181818] md:h-full relative z-20">
 
-        {/* Header */}
-        <div className="h-14 flex items-center justify-between px-6 border-b border-[#2C2C2C]">
+        {/* Header (Fixed) */}
+        <div className="h-14 flex-shrink-0 flex items-center justify-between px-6 border-b border-[#2C2C2C] bg-[#181818]">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded bg-[#FFEA00] flex items-center justify-center shadow-[0_0_10px_-2px_rgba(255,234,0,0.4)]">
               <Zap className="w-3.5 h-3.5 text-black fill-black" />
@@ -316,7 +334,8 @@ print(response.json())
           </div>
         </div>
 
-        <div className="p-6 space-y-8 flex-1">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
 
           {/* Account Status Banner */}
           <AnimatePresence>
@@ -448,7 +467,6 @@ print(response.json())
                 tooltip="Select the dimensions of the generated image."
               />
               <div className="relative">
-                {/* Replaced with a simple dropdown-like list or a grid? Using Grid as user asked for many ratios */}
                 <div className="grid grid-cols-3 gap-1">
                   {(["Auto", "1:1", "16:9", "4:3", "3:4", "9:16"] as AspectRatio[]).map((r) => (
                     <button
@@ -464,7 +482,6 @@ print(response.json())
                       {r}
                     </button>
                   ))}
-                  {/* Just minimal subset for now to save space, assuming user wants full list maybe in select component */}
                 </div>
               </div>
             </div>
@@ -477,7 +494,6 @@ print(response.json())
               />
               <div className="flex flex-col gap-1">
                 {(["1K", "2K", "4K"] as Resolution[]).map((r) => {
-                  // Check if Locked: Pro (AccessToken exists) unlocks 4K
                   const isLocked = r === "4K" && !accessToken;
                   return (
                     <button
@@ -532,12 +548,20 @@ print(response.json())
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t border-[#2C2C2C] bg-[#181818] sticky bottom-0 z-10">
+        <div className="p-4 border-t border-[#2C2C2C] bg-[#181818] sticky bottom-0 z-10 flex gap-2">
+          <Button
+            variant="secondary"
+            className="w-10 px-0 flex-shrink-0"
+            onClick={() => setShowJson(true)}
+            title="View JSON Payload"
+          >
+            <FileJson className="w-4 h-4 text-[#888]" />
+          </Button>
           <Button
             onClick={generate}
             isLoading={isGenerating}
             variant="brand"
-            className="w-full h-10 text-sm font-semibold"
+            className="flex-1 h-9 text-sm font-semibold"
           >
             {!isGenerating && <Zap className="w-4 h-4 fill-black mr-2" />}
             {isGenerating ? "Generating..." : "Generate Image"}
@@ -546,78 +570,186 @@ print(response.json())
       </aside>
 
 
-      {/* --- Right Panel: Gallery --- */}
+      {/* --- Right Panel: Gallery & History --- */}
       <main className="flex-1 h-screen overflow-hidden flex flex-col relative bg-[#121212]">
 
         {/* Gallery Header */}
         <header className="h-14 border-b border-[#2C2C2C] flex items-center justify-between px-8 flex-shrink-0 bg-[#121212]">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-[#EDEDED]">Generations</span>
-            <div className="h-4 w-[1px] bg-[#333]" />
-            <span className="text-xs text-[#666]">Session History</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setActiveTab("gallery")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-sm font-medium transition-colors",
+                activeTab === "gallery" ? "bg-[#232323] text-[#EDEDED]" : "text-[#888] hover:text-[#CCC]"
+              )}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              Generations
+            </button>
+            <div className="w-[1px] h-4 bg-[#333] mx-2" />
+            <button
+              onClick={() => setActiveTab("history")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-sm font-medium transition-colors",
+                activeTab === "history" ? "bg-[#232323] text-[#EDEDED]" : "text-[#888] hover:text-[#CCC]"
+              )}
+            >
+              <History className="w-3.5 h-3.5" />
+              History
+            </button>
           </div>
+
           <Button variant="outline" size="sm" onClick={() => setShowCode(!showCode)} className="gap-2 text-xs h-8">
             <Code className="w-3.5 h-3.5" />
             View API
           </Button>
         </header>
 
-        {/* Scrollable Area */}
+        {/* Tab Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
-          {generatedImages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-[#444]">
-              <div className="w-16 h-16 rounded-full bg-[#1A1A1A] border border-[#2C2C2C] flex items-center justify-center mb-4 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.5)]">
-                <Command className="w-6 h-6 text-[#333]" />
-              </div>
-              <p className="text-sm font-medium text-[#888]">No images generated yet</p>
-              <p className="text-xs text-[#555] mt-1">
-                {!accessToken ? "Sign in to start creating." : "Configure your prompt to start dreaming."}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
-              <AnimatePresence mode="popLayout">
-                {generatedImages.map((img) => (
-                  <motion.div
-                    key={img.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="group relative rounded-[4px] overflow-hidden bg-[#1A1A1A] border border-[#333] hover:border-[#555] transition-colors"
-                  >
-                    {/* Image */}
-                    <div className="aspect-square relative bg-[#050505]">
-                      <Image
-                        src={img.url}
-                        alt={img.prompt}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <Button size="icon" variant="primary" className="h-8 w-8 rounded-full border-0">
-                          <Maximize2 className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button size="icon" variant="primary" className="h-8 w-8 rounded-full border-0">
-                          <Download className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
 
-                    {/* Info */}
-                    <div className="p-3 border-t border-[#2C2C2C]">
-                      <p className="text-xs text-[#CCC] line-clamp-1 font-medium">{img.prompt}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[10px] text-[#666] font-mono px-1.5 py-0.5 rounded border border-[#333] bg-[#121212]">{img.settings.ar}</span>
-                        <span className="text-[10px] text-[#666] font-mono px-1.5 py-0.5 rounded border border-[#333] bg-[#121212]">{img.settings.res}</span>
+          {activeTab === "gallery" ? (
+            generatedImages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-[#444]">
+                <div className="w-16 h-16 rounded-full bg-[#1A1A1A] border border-[#2C2C2C] flex items-center justify-center mb-4 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.5)]">
+                  <Command className="w-6 h-6 text-[#333]" />
+                </div>
+                <p className="text-sm font-medium text-[#888]">No images generated yet</p>
+                <p className="text-xs text-[#555] mt-1">
+                  {!accessToken ? "Sign in to start creating." : "Configure your prompt to start dreaming."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <AnimatePresence mode="popLayout">
+                  {generatedImages.map((img) => (
+                    <motion.div
+                      key={img.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="group relative rounded-[4px] overflow-hidden bg-[#1A1A1A] border border-[#333] hover:border-[#555] transition-colors"
+                    >
+                      {/* Image */}
+                      <div className="aspect-square relative bg-[#050505] cursor-pointer" onClick={() => window.open(img.url, "_blank")}>
+                        <Image
+                          src={img.url}
+                          alt={img.prompt}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none">
+                          {/* Actions Overlay */}
+                        </div>
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button size="icon" variant="primary" className="h-7 w-7 rounded-full border-0 shadow-lg pointer-events-auto" onClick={(e) => { e.stopPropagation(); downloadImage(img.url, `gemini-${img.id}.png`); }}>
+                            <Download className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+
+                      {/* Info */}
+                      <div className="p-3 border-t border-[#2C2C2C]">
+                        <p className="text-xs text-[#CCC] line-clamp-1 font-medium">{img.prompt}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex gap-2">
+                            <span className="text-[10px] text-[#666] font-mono px-1.5 py-0.5 rounded border border-[#333] bg-[#121212]">{img.settings.ar}</span>
+                            <span className="text-[10px] text-[#666] font-mono px-1.5 py-0.5 rounded border border-[#333] bg-[#121212]">{img.settings.res}</span>
+                          </div>
+                          <button className="text-[#444] hover:text-red-500 transition-colors" onClick={() => deleteImage(img.id)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )
+          ) : (
+            // History Tab
+            <div className="w-full">
+              <div className="border border-[#2C2C2C] rounded-[4px] bg-[#181818] overflow-hidden">
+                <table className="w-full text-left text-xs text-[#888]">
+                  <thead className="bg-[#1A1A1A] border-b border-[#2C2C2C] font-medium text-[#666] uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 py-3 w-20">Preview</th>
+                      <th className="px-4 py-3">ID</th>
+                      <th className="px-4 py-3 w-24">Status</th>
+                      <th className="px-4 py-3">Prompt Summary</th>
+                      <th className="px-4 py-3 w-32">Created</th>
+                      <th className="px-4 py-3 w-24 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#2C2C2C]">
+                    {generatedImages.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-[#555]">No history found.</td>
+                      </tr>
+                    ) : (
+                      generatedImages.map((img) => (
+                        <tr key={img.id} className="hover:bg-[#232323] transition-colors group">
+                          <td className="px-4 py-2">
+                            <div className="h-10 w-10 relative rounded-[2px] overflow-hidden border border-[#333]">
+                              <Image src={img.url} alt="t" fill className="object-cover" />
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 font-mono text-[#555]">{img.id.slice(-6)}</td>
+                          <td className="px-4 py-2">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-500/10 text-green-500 border border-green-500/20">
+                              DONE
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-[#EDEDED] max-w-[300px] truncate">{img.prompt}</td>
+                          <td className="px-4 py-2 text-[#666]">{new Date(img.timestamp).toLocaleTimeString()}</td>
+                          <td className="px-4 py-2 text-right">
+                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button className="text-[#666] hover:text-[#EDEDED]" onClick={() => downloadImage(img.url, `img-${img.id}.png`)}>
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+                              <button className="text-[#666] hover:text-red-500" onClick={() => deleteImage(img.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
+
+        {/* JSON Viewer Modal */}
+        <AnimatePresence>
+          {showJson && (
+            <>
+              <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-8 backdrop-blur-sm" onClick={() => setShowJson(false)}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-[#121212] border border-[#333] rounded-lg shadow-2xl w-full max-w-2xl h-[500px] flex flex-col overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between p-4 border-b border-[#2C2C2C] bg-[#181818]">
+                    <span className="text-sm font-medium text-[#EDEDED]">Current JSON Payload</span>
+                    <button onClick={() => setShowJson(false)}><X className="w-4 h-4 text-[#888]" /></button>
+                  </div>
+                  <div className="flex-1 overflow-auto bg-[#0C0C0C] p-4 text-[#CCC] font-mono text-xs">
+                    <pre>{JSON.stringify({
+                      prompt,
+                      reference_images: refImages.map(f => f.name),
+                      config: { ar, resolution, format },
+                      timestamp: new Date().toISOString()
+                    }, null, 2)}</pre>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* Code Drawer - Slide Over */}
         <AnimatePresence>
