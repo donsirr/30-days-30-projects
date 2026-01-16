@@ -202,14 +202,6 @@ export default function AIPlayground() {
     setRefImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const enhancePrompt = async () => {
-    if (!prompt) return;
-    setIsEnhancing(true);
-    await new Promise(r => setTimeout(r, 800)); // Mock delay
-    setPrompt(prev => prev + ", highly detailed, 8k resolution, cinematic lighting, photorealistic, trending on artstation, unreal engine 5 render");
-    setIsEnhancing(false);
-  };
-
   const generate = async () => {
     if (!prompt.trim()) return;
 
@@ -229,12 +221,6 @@ export default function AIPlayground() {
         { aspectRatio: ar, resolution, format },
         refImages
       );
-
-      // Parse result - Assuming standard "generateContent" response structure, 
-      // usually image bits are inline_data if "predict" or text. 
-      // FOR MOCK PURPOSE until real model exists: We will assume success and add a mock image or extract base64 if real model returns it.
-      // For this demo, since valid image generation usually uses Vertex AI, we'll log the result and default to placeholder if empty 
-      // to prevent app breaking during testing with standard scopes.
       console.log("API Result:", result);
 
       // Fallback for demo if API returns text or standard Gemini response instead of Image
@@ -317,8 +303,8 @@ print(response.json())
           >
             {accessToken ? (
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-[#FFEA00]" />
-                <span>Pro Team</span>
+                <div className="w-2 h-2 rounded-full bg-[#6cf08f]" />
+                <span>Connected</span>
                 <ChevronDown className="w-3 h-3 text-[#666]" />
               </div>
             ) : (
@@ -375,14 +361,6 @@ print(response.json())
                 tooltip="Describe the image you want to generate in detail."
                 required
               />
-              <button
-                onClick={enhancePrompt}
-                disabled={isEnhancing}
-                className="flex items-center gap-1 text-[10px] text-[#FFEA00] hover:text-[#FFEA00]/80 transition-colors disabled:opacity-50"
-              >
-                <Wand2 className={cn("w-3 h-3", isEnhancing && "animate-spin")} />
-                {isEnhancing ? "Enhancing..." : "Enhance"}
-              </button>
             </div>
             <div className="relative group">
               <textarea

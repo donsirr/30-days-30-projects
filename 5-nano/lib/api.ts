@@ -5,7 +5,7 @@ export type UserInfo = {
 };
 
 // Replace with a valid Google Client ID or use a placeholder
-const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com";
+const CLIENT_ID = "464976722823-jqmt7d2kg5tecppj41noua1v65keavbu.apps.googleusercontent.com";
 const SCOPE = "https://www.googleapis.com/auth/generative-language.retriever"; // Adjust as needed for specific models
 
 interface TokenResponse {
@@ -71,20 +71,33 @@ export const generateImageWithGemini = async (
         })
     );
 
+    // Construct prompt with settings appended as natural language instructions
+    // This creates a robust fallback if the specific API parameter schema is unknown or strict.
+    const enhancedPrompt = `
+      ${prompt}
+      
+      Technical Specifications:
+      - Aspect Ratio: ${config.aspectRatio}
+      - Resolution: ${config.resolution}
+      - Format: ${config.format}
+      
+      Generate a high-quality image based on these details.
+    `.trim();
+
     const payload = {
         contents: [
             {
                 parts: [
-                    { text: prompt },
+                    { text: enhancedPrompt },
                     ...imageParts, // Append reference images
                 ],
             },
         ],
-        // Hypothetical config structure for "Nano Banana" schema
+        // Removed hypothetical generation_config fields that caused errors.
+        // If specific params are needed for a real endpoint, they would go here.
         generation_config: {
-            aspect_ratio: config.aspectRatio,
-            image_size: config.resolution === "4K" ? "4K" : undefined, // Trigger Pro
-            response_mime_type: config.format === "JPEG" ? "image/jpeg" : "image/png",
+            // Standard Gemini params if needed:
+            // temperature: 0.4,
         },
     };
 
