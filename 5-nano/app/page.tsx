@@ -14,7 +14,9 @@ import {
   Info,
   User,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Command,
+  ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
@@ -59,29 +61,31 @@ const Button = ({
   children,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "outline" | "magic";
+  variant?: "primary" | "secondary" | "ghost" | "outline" | "magic" | "brand";
   size?: "default" | "sm" | "icon" | "xs";
   isLoading?: boolean;
 }) => {
   const variants = {
-    primary: "bg-zinc-50 text-zinc-950 hover:bg-zinc-200 shadow-sm",
-    secondary: "bg-zinc-800 text-zinc-50 hover:bg-zinc-700",
-    ghost: "text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800/50",
-    outline: "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-50 bg-transparent",
-    magic: "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white hover:opacity-90 border-0 shadow-lg shadow-purple-500/20",
+    // Supabase-like buttons
+    primary: "bg-[#EDEDED] text-black hover:bg-white border border-[#EDEDED] shadow-sm", // White primary
+    brand: "bg-[#FFEA00] text-black hover:bg-[#FFD600] border border-[#FFEA00]/50 shadow-[0_0_15px_-3px_rgba(255,234,0,0.3)]", // Banana Yellow
+    secondary: "bg-[#232323] text-[#EDEDED] hover:bg-[#2a2a2a] border border-[#333]",
+    ghost: "text-[#888888] hover:text-[#EDEDED] hover:bg-[#232323]",
+    outline: "border border-[#333] text-[#EDEDED] hover:border-[#555] bg-transparent",
+    magic: "bg-gradient-to-tr from-indigo-500 to-purple-500 text-white hover:opacity-90 border-0 shadow-lg shadow-purple-500/20",
   };
 
   const sizes = {
-    default: "h-10 px-4 py-2",
+    default: "h-9 px-4 py-2", // Slightly shorter standard height
     sm: "h-8 px-3 text-xs",
     xs: "h-6 px-2 text-[10px]",
-    icon: "h-9 w-9 p-0 flex items-center justify-center",
+    icon: "h-8 w-8 p-0 flex items-center justify-center",
   };
 
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center rounded-[4px] text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFEA00]/50 disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
         className
@@ -89,11 +93,20 @@ const Button = ({
       disabled={isLoading || props.disabled}
       {...props}
     >
-      {isLoading && <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+      {isLoading && <span className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />}
       {children}
     </button>
   );
 };
+
+const GoogleIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.26.81-.58z" fill="#FBBC05" />
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+  </svg>
+);
 
 const Tooltip = ({ content, children }: { content: string; children: React.ReactNode }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -107,14 +120,13 @@ const Tooltip = ({ content, children }: { content: string; children: React.React
       <AnimatePresence>
         {isVisible && (
           <motion.div
-            initial={{ opacity: 0, y: 5, scale: 0.95 }}
+            initial={{ opacity: 0, y: 4, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 5, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs rounded-lg shadow-xl whitespace-nowrap z-50 pointer-events-none"
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ duration: 0.1 }}
+            className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-[#1C1C1C] border border-[#333] text-[#EDEDED] text-[11px] leading-tight rounded shadow-xl w-max max-w-[200px] whitespace-normal z-50 pointer-events-none"
           >
             {content}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-zinc-800" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -123,13 +135,13 @@ const Tooltip = ({ content, children }: { content: string; children: React.React
 };
 
 const LabelWithTooltip = ({ label, tooltip, required }: { label: string, tooltip: string, required?: boolean }) => (
-  <div className="flex items-center gap-1.5 mb-2 pl-1">
-    <label className="text-xs uppercase tracking-wider text-zinc-500 font-semibold flex items-center gap-1">
+  <div className="flex items-center gap-1.5 mb-2">
+    <label className="text-[11px] font-normal text-[#888888] flex items-center gap-0.5">
       {label}
-      {required && <span className="text-red-500/80 text-lg leading-3 h-3 block mt-1">*</span>}
+      {required && <span className="text-red-500/80 ml-0.5">*</span>}
     </label>
     <Tooltip content={tooltip}>
-      <Info className="w-3 h-3 text-zinc-600 hover:text-zinc-400 cursor-help transition-colors" />
+      <Info className="w-3 h-3 text-[#444] hover:text-[#888] cursor-help transition-colors" />
     </Tooltip>
   </div>
 );
@@ -216,66 +228,46 @@ print(response.json())
   };
 
   return (
-    <div className="flex h-screen w-full flex-col md:flex-row bg-zinc-950 text-zinc-100 overflow-hidden font-sans selection:bg-zinc-800">
+    <div className="flex h-screen w-full flex-col md:flex-row bg-[#121212] text-[#EDEDED] overflow-hidden font-sans selection:bg-[#FFEA00]/30 selection:text-[#FFEA00]">
 
       {/* --- Left Sidebar: Controls --- */}
-      <aside className="w-full md:w-[420px] flex-shrink-0 flex flex-col border-r border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl md:h-full overflow-y-auto custom-scrollbar">
-        <div className="p-6 space-y-8 flex-1">
+      <aside className="w-full md:w-[400px] flex-shrink-0 flex flex-col border-r border-[#2C2C2C] bg-[#181818] md:h-full overflow-y-auto custom-scrollbar">
 
-          {/* Header & Auth */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
-                <Zap className="w-5 h-5 text-zinc-950 fill-zinc-950" />
-              </div>
-              <div className="leading-tight">
-                <h1 className="text-base font-bold tracking-tight text-zinc-100">Nano Banana</h1>
-                <p className="text-[10px] text-zinc-500 font-medium">Gemini 3.0 Pro</p>
-              </div>
+        {/* Header */}
+        <div className="h-14 flex items-center justify-between px-6 border-b border-[#2C2C2C]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded bg-[#FFEA00] flex items-center justify-center shadow-[0_0_10px_-2px_rgba(255,234,0,0.4)]">
+              <Zap className="w-3.5 h-3.5 text-black fill-black" />
             </div>
-
-            {/* Account Toggle Mock */}
-            <div
-              className={cn(
-                "flex items-center gap-2 px-2 py-1.5 rounded-full border transition-all cursor-pointer select-none",
-                user ? "bg-zinc-800/50 border-zinc-700" : "bg-transparent border-dashed border-zinc-700 hover:border-zinc-500"
-              )}
-              onClick={() => setUser(user ? null : { name: "User", isPro: true })}
-            >
-              {user ? (
-                <>
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-[9px] font-bold">
-                    DP
-                  </div>
-                  {user.isPro && <span className="text-[9px] font-bold bg-white text-black px-1 rounded-sm">PRO</span>}
-                </>
-              ) : (
-                <span className="text-[10px] text-zinc-400 font-medium px-1 flex items-center gap-1">
-                  <User className="w-3 h-3" />
-                  Connect
-                </span>
-              )}
-            </div>
+            <span className="text-sm font-medium text-[#EDEDED]">Playground</span>
           </div>
+
+          <div
+            className={cn(
+              "flex items-center gap-2 pl-2 pr-1 py-1 rounded border transition-all cursor-pointer select-none text-[11px]",
+              user ? "bg-[#232323] border-[#333] hover:border-[#444]" : "bg-transparent border-dashed border-[#333] hover:border-[#555] text-[#888]"
+            )}
+            onClick={() => setUser(user ? null : { name: "User", isPro: true })}
+          >
+            {user ? (
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-[#FFEA00]" />
+                <span>Pro Team</span>
+                <ChevronDown className="w-3 h-3 text-[#666]" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-1">
+                <GoogleIcon className="w-3.5 h-3.5" />
+                <span className="text-[#EDEDED] font-medium">Connect to Google</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-8 flex-1">
 
           {/* Account Status Banner */}
           <AnimatePresence>
-            {user?.isPro && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 flex items-start gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-xs font-semibold text-indigo-300">Pro Account Active</h3>
-                    <p className="text-[10px] text-indigo-200/60 leading-tight">You have access to 4K Ultra generation.</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
             {!user && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
@@ -283,10 +275,11 @@ print(response.json())
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
-                <div className="bg-zinc-800/30 border border-zinc-800 rounded-lg p-3 flex items-center justify-between group cursor-pointer hover:border-yellow-500/30 transition-colors" onClick={() => setUser({ name: "User", isPro: true })}>
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-zinc-500 group-hover:text-yellow-500 transition-colors" />
-                    <span className="text-xs text-zinc-400 group-hover:text-zinc-200">Connect Google Account</span>
+                <div className="bg-[#232323] border border-[#333] rounded-[4px] p-3 flex items-start gap-3 cursor-pointer" onClick={() => setUser({ name: "User", isPro: true })}>
+                  <AlertCircle className="w-4 h-4 text-[#888] mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-medium text-[#EDEDED]">Connect Account</h4>
+                    <p className="text-[11px] text-[#888] mt-0.5 leading-tight">Link your Google account to unlock 4K Ultra resolution.</p>
                   </div>
                 </div>
               </motion.div>
@@ -295,31 +288,29 @@ print(response.json())
 
           {/* Prompt */}
           <div className="space-y-1">
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end mb-1">
               <LabelWithTooltip
                 label="Prompt"
                 tooltip="Describe the image you want to generate in detail."
                 required
               />
-              <Button
-                variant="magic"
-                size="xs"
-                className="mb-2 gap-1.5"
+              <button
                 onClick={enhancePrompt}
-                isLoading={isEnhancing}
+                disabled={isEnhancing}
+                className="flex items-center gap-1 text-[10px] text-[#FFEA00] hover:text-[#FFEA00]/80 transition-colors disabled:opacity-50"
               >
-                <Wand2 className="w-3 h-3" />
-                Enhance
-              </Button>
+                <Wand2 className={cn("w-3 h-3", isEnhancing && "animate-spin")} />
+                {isEnhancing ? "Enhancing..." : "Enhance"}
+              </button>
             </div>
             <div className="relative group">
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe what you want to see..."
-                className="w-full min-h-[140px] rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 resize-none transition-all duration-200"
+                className="w-full min-h-[120px] rounded-[4px] border border-[#333] bg-[#232323] p-3 text-sm text-[#EDEDED] placeholder:text-[#555] focus:border-[#FFEA00] focus:outline-none focus:ring-1 focus:ring-[#FFEA00] resize-none transition-all duration-150 shadow-inner"
               />
-              <div className="absolute bottom-3 right-3 text-[10px] text-zinc-600 font-mono">
+              <div className="absolute bottom-2 right-2 text-[10px] text-[#555] font-mono">
                 {prompt.length} chars
               </div>
             </div>
@@ -333,12 +324,12 @@ print(response.json())
                 tooltip="Upload up to 14 images to guide the generation style or content."
                 required
               />
-              <span className="text-[10px] text-zinc-600 mb-2">{refImages.length} / 14</span>
+              <span className="text-[10px] text-[#555]">{refImages.length} / 14</span>
             </div>
 
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800/30 rounded-xl p-6 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 group"
+              className="border border-dashed border-[#333] hover:border-[#555] hover:bg-[#232323] rounded-[4px] py-8 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 group bg-[#1A1A1A]"
             >
               <input
                 type="file"
@@ -348,18 +339,17 @@ print(response.json())
                 ref={fileInputRef}
                 onChange={handleFileChange}
               />
-              <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Upload className="w-5 h-5 text-zinc-400" />
+              <div className="w-8 h-8 rounded-full bg-[#232323] border border-[#333] flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Upload className="w-3.5 h-3.5 text-[#888]" />
               </div>
-              <p className="text-xs text-zinc-500 text-center">
-                <span className="text-zinc-300 font-medium">Click to upload</span> or drag and drop<br />
-                Supports JPG, PNG up to 14 files
+              <p className="text-[11px] text-[#666]">
+                <span className="text-[#888] font-medium underline underline-offset-2">Upload</span> or drag files
               </p>
             </div>
 
             {/* Thumbs - Ordered Containers */}
             {refImages.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mt-4">
+              <div className="grid grid-cols-4 gap-2 mt-3 p-2 bg-[#232323] rounded-[4px] border border-[#333]">
                 <AnimatePresence>
                   {refImages.map((file, i) => (
                     <motion.div
@@ -367,20 +357,20 @@ print(response.json())
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.5 }}
-                      className="relative aspect-square rounded-lg overflow-hidden border border-zinc-800 group bg-zinc-900"
+                      className="relative aspect-square rounded-[3px] overflow-hidden border border-[#444] group bg-[#121212]"
                     >
-                      <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" />
+                      <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover transition-opacity" />
 
                       {/* Order Badge */}
-                      <div className="absolute top-1 left-1 w-5 h-5 flex items-center justify-center bg-black/50 backdrop-blur-md rounded-md text-[10px] font-mono border border-white/10 text-white shadow-sm pointer-events-none">
+                      <div className="absolute top-0.5 left-0.5 w-4 h-4 flex items-center justify-center bg-black/70 backdrop-blur-sm rounded-sm text-[9px] font-mono text-white pointer-events-none">
                         {i + 1}
                       </div>
 
                       <button
                         onClick={() => removeFile(i)}
-                        className="absolute top-1 right-1 bg-black/60 hover:bg-red-500/80 text-white rounded-md p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-red-500/80 text-white rounded-sm p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-2.5 h-2.5" />
                       </button>
                     </motion.div>
                   ))}
@@ -398,17 +388,20 @@ print(response.json())
                 label="Aspect Ratio"
                 tooltip="Select the dimensions of the generated image."
               />
-              <div className="grid grid-cols-3 gap-1.5 bg-zinc-900/50 p-1 rounded-lg border border-zinc-800">
+              <div className="flex flex-col gap-1">
                 {["1:1", "16:9", "9:16", "4:3", "3:4"].slice(0, 3).map((r) => (
                   <button
                     key={r}
                     onClick={() => setAr(r as AspectRatio)}
                     className={cn(
-                      "text-[10px] font-medium py-1.5 rounded-md transition-all",
-                      ar === r ? "bg-zinc-700 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                      "flex items-center justify-between w-full px-3 py-2 rounded-[4px] text-xs transition-all border",
+                      ar === r
+                        ? "bg-[#232323] border-[#FFEA00] text-[#EDEDED]"
+                        : "bg-transparent border-transparent text-[#888] hover:bg-[#232323] hover:text-[#bbb]"
                     )}
                   >
-                    {r}
+                    <span>{r}</span>
+                    {ar === r && <CheckCircle2 className="w-3 h-3 text-[#FFEA00]" />}
                   </button>
                 ))}
               </div>
@@ -420,7 +413,7 @@ print(response.json())
                 label="Resolution"
                 tooltip="Higher resolution requires a Pro account."
               />
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1">
                 {(["1K", "2K", "4K"] as Resolution[]).map((r) => {
                   const isLocked = r === "4K" && !user?.isPro;
                   return (
@@ -429,20 +422,18 @@ print(response.json())
                       onClick={() => !isLocked && setResolution(r)}
                       disabled={isLocked}
                       className={cn(
-                        "flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium border transition-all relative overflow-hidden",
+                        "flex items-center justify-between w-full px-3 py-2 rounded-[4px] text-xs transition-all border relative",
                         resolution === r
-                          ? "border-zinc-600 bg-zinc-800/80 text-zinc-100 ring-1 ring-zinc-700"
-                          : "border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:border-zinc-700",
-                        isLocked && "opacity-50 cursor-not-allowed hover:border-zinc-800 bg-zinc-950"
+                          ? "bg-[#232323] border-[#FFEA00] text-[#EDEDED]"
+                          : "bg-transparent border-transparent text-[#888] hover:bg-[#232323] hover:text-[#bbb]",
+                        isLocked && "opacity-50 cursor-not-allowed hover:bg-transparent"
                       )}
                     >
-                      {r}
-                      {r === "4K" && (
-                        <span className={cn(
-                          "text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wide",
-                          isLocked ? "bg-zinc-800 text-zinc-500" : "bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
-                        )}>PRO</span>
-                      )}
+                      <span className="flex items-center gap-2">
+                        {r}
+                        {r === "4K" && <span className="text-[9px] bg-[#FFEA00]/10 text-[#FFEA00] px-1 rounded uppercase tracking-wide font-medium">PRO</span>}
+                      </span>
+                      {resolution === r && !isLocked && <CheckCircle2 className="w-3 h-3 text-[#FFEA00]" />}
                     </button>
                   );
                 })}
@@ -452,21 +443,23 @@ print(response.json())
             {/* Format */}
             <div className="space-y-1 col-span-2">
               <LabelWithTooltip
-                label="Format"
+                label="Output Format"
                 tooltip="Choose the output file format."
               />
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {(["PNG", "JPEG"] as ImageFormat[]).map(f => (
-                  <label key={f} className="flex items-center gap-2 cursor-pointer group">
-                    <div className={cn(
-                      "w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
-                      format === f ? "border-zinc-500 bg-zinc-800" : "border-zinc-700 group-hover:border-zinc-600"
-                    )}>
-                      {format === f && <div className="w-2 h-2 rounded-full bg-zinc-200" />}
-                    </div>
-                    <span className={cn("text-xs font-medium transition-colors", format === f ? "text-zinc-200" : "text-zinc-500 group-hover:text-zinc-400")}>{f}</span>
-                    <input type="radio" className="hidden" name="format" value={f} checked={format === f} onChange={() => setFormat(f)} />
-                  </label>
+                  <button
+                    key={f}
+                    onClick={() => setFormat(f)}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-[4px] text-xs font-medium border transition-all text-center",
+                      format === f
+                        ? "bg-[#232323] border-[#333] text-[#EDEDED] shadow-sm"
+                        : "bg-transparent border-[#333] text-[#666] hover:text-[#888] hover:border-[#444]"
+                    )}
+                  >
+                    {f}
+                  </button>
                 ))}
               </div>
             </div>
@@ -476,13 +469,14 @@ print(response.json())
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t border-zinc-800 bg-zinc-900/80 backdrop-blur-md sticky bottom-0 z-10">
+        <div className="p-6 border-t border-[#2C2C2C] bg-[#181818] sticky bottom-0 z-10">
           <Button
             onClick={generate}
             isLoading={isGenerating}
-            className="w-full h-12 text-base shadow-lg shadow-zinc-900/20 bg-zinc-100 hover:bg-white text-black border-0 gap-2"
+            variant="brand"
+            className="w-full h-10 text-sm font-semibold"
           >
-            {!isGenerating && <Zap className="w-4 h-4 fill-black" />}
+            {!isGenerating && <Zap className="w-4 h-4 fill-black mr-2" />}
             {isGenerating ? "Generating..." : "Generate Image"}
           </Button>
         </div>
@@ -490,68 +484,67 @@ print(response.json())
 
 
       {/* --- Right Panel: Gallery --- */}
-      <main className="flex-1 h-screen overflow-hidden flex flex-col relative bg-[#050505]">
+      <main className="flex-1 h-screen overflow-hidden flex flex-col relative bg-[#121212]">
 
         {/* Gallery Header */}
-        <header className="h-16 border-b border-zinc-900 flex items-center justify-between px-6 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-zinc-500">History</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-400">{generatedImages.length}</span>
+        <header className="h-14 border-b border-[#2C2C2C] flex items-center justify-between px-8 flex-shrink-0 bg-[#121212]">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-[#EDEDED]">Generations</span>
+            <div className="h-4 w-[1px] bg-[#333]" />
+            <span className="text-xs text-[#666]">Session History</span>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setShowCode(!showCode)} className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowCode(!showCode)} className="gap-2 text-xs h-8">
             <Code className="w-3.5 h-3.5" />
-            View Code
+            View API
           </Button>
         </header>
 
         {/* Scrollable Area */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
           {generatedImages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-zinc-500 opacity-60">
-              <div className="w-24 h-24 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex items-center justify-center mb-4">
-                <ImageIcon className="w-8 h-8 opacity-40" />
+            <div className="h-full flex flex-col items-center justify-center text-[#444]">
+              <div className="w-16 h-16 rounded-full bg-[#1A1A1A] border border-[#2C2C2C] flex items-center justify-center mb-4 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.5)]">
+                <Command className="w-6 h-6 text-[#333]" />
               </div>
-              <p className="text-lg font-medium text-zinc-400">Ready to dream</p>
-              <p className="text-sm">Configure settings and generate your first image.</p>
+              <p className="text-sm font-medium text-[#888]">No images generated yet</p>
+              <p className="text-xs text-[#555] mt-1">Configure your prompt to start dreaming.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
               <AnimatePresence mode="popLayout">
                 {generatedImages.map((img) => (
                   <motion.div
                     key={img.id}
                     layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="group relative rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50 hover:border-zinc-700 transition-colors"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="group relative rounded-[4px] overflow-hidden bg-[#1A1A1A] border border-[#333] hover:border-[#555] transition-colors"
                   >
                     {/* Image */}
-                    <div className="aspect-square relative bg-zinc-950">
+                    <div className="aspect-square relative bg-[#050505]">
                       <Image
                         src={img.url}
                         alt={img.prompt}
                         fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        className="object-cover"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
-                        <div className="flex gap-2">
-                          <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white text-white hover:text-black">
-                            <Maximize2 className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white text-white hover:text-black">
-                            <Download className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <Button size="icon" variant="primary" className="h-8 w-8 rounded-full border-0">
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button size="icon" variant="primary" className="h-8 w-8 rounded-full border-0">
+                          <Download className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
                     </div>
 
                     {/* Info */}
-                    <div className="p-4 space-y-2">
-                      <p className="text-sm text-zinc-300 line-clamp-2 leading-relaxed font-light">{img.prompt}</p>
-                      <div className="flex items-center gap-2 pt-2">
-                        <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-900">{img.settings.ar}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-900">{img.settings.res}</span>
+                    <div className="p-3 border-t border-[#2C2C2C]">
+                      <p className="text-xs text-[#CCC] line-clamp-1 font-medium">{img.prompt}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[10px] text-[#666] font-mono px-1.5 py-0.5 rounded border border-[#333] bg-[#121212]">{img.settings.ar}</span>
+                        <span className="text-[10px] text-[#666] font-mono px-1.5 py-0.5 rounded border border-[#333] bg-[#121212]">{img.settings.res}</span>
                       </div>
                     </div>
                   </motion.div>
@@ -561,32 +554,37 @@ print(response.json())
           )}
         </div>
 
-        {/* Code Drawer / Drawer Overlay */}
+        {/* Code Drawer - Slide Over */}
         <AnimatePresence>
           {showCode && (
             <>
               <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 onClick={() => setShowCode(false)}
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm z-40"
+                className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-40"
               />
               <motion.div
                 initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="absolute right-0 top-0 bottom-0 w-full md:w-[500px] bg-zinc-950 border-l border-zinc-800 z-50 shadow-2xl flex flex-col"
+                transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                className="absolute right-0 top-0 bottom-0 w-full md:w-[600px] bg-[#121212] border-l border-[#333] z-50 shadow-2xl flex flex-col"
               >
-                <div className="flex items-center justify-between p-6 border-b border-zinc-900">
-                  <h2 className="text-lg font-medium">API Request</h2>
+                <div className="flex items-center justify-between px-6 h-14 border-b border-[#2C2C2C] bg-[#121212]">
+                  <div className="flex items-center gap-2">
+                    <Code className="w-4 h-4 text-[#FFEA00]" />
+                    <h2 className="text-sm font-medium text-[#EDEDED]">API Request</h2>
+                  </div>
                   <Button variant="ghost" size="icon" onClick={() => setShowCode(false)}>
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="flex-1 overflow-auto p-6 bg-[#0B0B0C]">
-                  <pre className="font-mono text-xs text-zinc-400 whitespace-pre-wrap leading-relaxed">
-                    {getCodeSnippet()}
-                  </pre>
+                <div className="flex-1 overflow-auto p-0 bg-[#0C0C0C]">
+                  <div className="p-6">
+                    <pre className="font-mono text-[11px] text-[#CCC] leading-6">
+                      {getCodeSnippet()}
+                    </pre>
+                  </div>
                 </div>
-                <div className="p-6 border-t border-zinc-900 bg-zinc-900/50">
+                <div className="p-6 border-t border-[#2C2C2C] bg-[#181818]">
                   <Button className="w-full" variant="secondary">Copy to Clipboard</Button>
                 </div>
               </motion.div>
@@ -599,17 +597,18 @@ print(response.json())
       {/* Global Utilities */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 5px;
+          width: 6px;
+          height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #27272a;
-          border-radius: 5px;
+          background: #333;
+          border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #3f3f46;
+          background: #444;
         }
       `}</style>
     </div>
